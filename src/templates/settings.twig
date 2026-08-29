@@ -1,0 +1,184 @@
+{% import "_includes/forms" as forms %}
+
+{% set isPro = plugin.isPro() %}
+
+{% if not isPro %}
+    <div class="readable">
+        <blockquote class="note">
+            <p>{{ "You’re running Penny Lite. Email delivery, control panel sessions, review mode and multi-target invites are Pro features."|t('penny') }}</p>
+        </blockquote>
+    </div>
+{% endif %}
+
+{{ forms.autosuggestField({
+    label: "Invite URL prefix"|t('penny'),
+    instructions: "The first part of the link you hand out — `/{prefix}/<key>`. The editing page itself is served from a control panel URL, because control panel field inputs need control panel assets to work."|t('penny', {prefix: settings.inviteUriPrefix}),
+    id: 'inviteUriPrefix',
+    name: 'inviteUriPrefix',
+    value: settings.inviteUriPrefix,
+    errors: settings.getErrors('inviteUriPrefix'),
+    suggestEnvVars: false,
+}) }}
+
+{{ forms.textField({
+    label: "Default expiry"|t('penny'),
+    instructions: "How many days a new invite lasts. Zero means no expiry, which is rarely what you want."|t('penny'),
+    id: 'defaultExpiryDays',
+    name: 'defaultExpiryDays',
+    type: 'number',
+    min: 0,
+    size: 5,
+    value: settings.defaultExpiryDays,
+    errors: settings.getErrors('defaultExpiryDays'),
+}) }}
+
+{{ forms.selectField({
+    label: "Default surface"|t('penny'),
+    instructions: "Where new invites send their recipient."|t('penny'),
+    id: 'defaultSurface',
+    name: 'defaultSurface',
+    options: [
+        { value: 'hosted', label: "Penny page"|t('penny') },
+        { value: 'cp', label: "Control panel"|t('penny') ~ (isPro ? '' : ' — ' ~ "Pro"|t('penny')) },
+    ],
+    value: settings.defaultSurface,
+    errors: settings.getErrors('defaultSurface'),
+}) }}
+
+{{ forms.elementSelectField({
+    label: "Acting user"|t('penny'),
+    instructions: "Whose identity the Penny page borrows so that field inputs can render. It is set in memory for one request — no session, no cookie. Leave empty to use whoever created the invite. What a recipient may actually change is decided by the invite’s scope, not by this."|t('penny'),
+    id: 'actingUserId',
+    name: 'actingUserId',
+    elementType: 'craft\\elements\\User',
+    limit: 1,
+    elements: settings.actingUserId ? [craft.users.id(settings.actingUserId).one()]|filter : [],
+    errors: settings.getErrors('actingUserId'),
+}) }}
+
+<hr>
+
+<h2>{{ "Control panel sessions"|t('penny') }}</h2>
+
+<div class="readable">
+    <blockquote class="note warning">
+        <p>{{ "An invite that opens the control panel creates a real Craft user account for the duration. Craft Solo licences allow one user, so on Solo this surface will fail — use the Penny page instead."|t('penny') }}</p>
+    </blockquote>
+</div>
+
+{{ forms.textField({
+    label: "Session length"|t('penny'),
+    instructions: "How long a control panel session lasts, in seconds, before the link has to be opened again."|t('penny'),
+    id: 'cpSessionDuration',
+    name: 'cpSessionDuration',
+    type: 'number',
+    min: 60,
+    size: 8,
+    value: settings.cpSessionDuration,
+    errors: settings.getErrors('cpSessionDuration'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: "Delete the temporary account afterwards"|t('penny'),
+    instructions: "On, the account is removed once its invite is finished. Off, it is kept but permanently suspended."|t('penny'),
+    id: 'deleteSessionUsers',
+    name: 'deleteSessionUsers',
+    on: settings.deleteSessionUsers,
+}) }}
+
+<hr>
+
+<h2>{{ "Email"|t('penny') }}</h2>
+
+{{ forms.lightswitchField({
+    label: "Send the link when an invite is created"|t('penny'),
+    instructions: "Pro. Off, you copy the link and send it yourself."|t('penny'),
+    id: 'sendOnCreate',
+    name: 'sendOnCreate',
+    on: settings.sendOnCreate,
+    disabled: not isPro,
+}) }}
+
+{{ forms.textField({
+    label: "Remind this many days before expiry"|t('penny'),
+    instructions: "Used by `php craft penny/invites/remind`, which you would run from cron. Zero disables reminders. A reminder re-issues the link, because only its hash is stored and the original cannot be sent twice."|t('penny'),
+    id: 'remindDaysBefore',
+    name: 'remindDaysBefore',
+    type: 'number',
+    min: 0,
+    size: 5,
+    value: settings.remindDaysBefore,
+    disabled: not isPro,
+    errors: settings.getErrors('remindDaysBefore'),
+}) }}
+
+{{ forms.textareaField({
+    label: "Notify on submission"|t('penny'),
+    instructions: "Who hears about a submission when the invite does not say. One address per line."|t('penny'),
+    id: 'notifyEmails',
+    name: 'notifyEmails',
+    rows: 3,
+    value: settings.notifyEmails,
+    errors: settings.getErrors('notifyEmails'),
+}) }}
+
+<hr>
+
+<h2>{{ "The Penny page"|t('penny') }}</h2>
+
+{{ forms.colorField({
+    label: "Accent colour"|t('penny'),
+    id: 'accentColor',
+    name: 'accentColor',
+    value: settings.getAccentColor(),
+    errors: settings.getErrors('accentColor'),
+}) }}
+
+{{ forms.elementSelectField({
+    label: "Logo"|t('penny'),
+    instructions: "Shown at the top of the page the recipient sees."|t('penny'),
+    id: 'logoAssetId',
+    name: 'logoAssetId',
+    elementType: 'craft\\elements\\Asset',
+    limit: 1,
+    criteria: { kind: ['image'] },
+    elements: settings.logoAssetId ? [craft.assets.id(settings.logoAssetId).one()]|filter : [],
+    errors: settings.getErrors('logoAssetId'),
+}) }}
+
+{{ forms.textField({
+    label: "Default heading"|t('penny'),
+    instructions: "Shown above the form when an invite does not set its own."|t('penny'),
+    id: 'hostedHeading',
+    name: 'hostedHeading',
+    value: settings.hostedHeading,
+    placeholder: "Could you fill this in?"|t('penny'),
+}) }}
+
+<hr>
+
+<h2>{{ "Housekeeping"|t('penny') }}</h2>
+
+{{ forms.textField({
+    label: "Keep the audit trail for"|t('penny'),
+    instructions: "Days. Zero keeps it forever."|t('penny'),
+    id: 'keepEventsDays',
+    name: 'keepEventsDays',
+    type: 'number',
+    min: 0,
+    size: 6,
+    value: settings.keepEventsDays,
+    errors: settings.getErrors('keepEventsDays'),
+}) }}
+
+{{ forms.textField({
+    label: "Failed attempts allowed per hour"|t('penny'),
+    instructions: "Per IP address. Only wrong keys count, so nobody is ever throttled by their own progress."|t('penny'),
+    id: 'maxAttemptsPerHour',
+    name: 'maxAttemptsPerHour',
+    type: 'number',
+    min: 0,
+    size: 6,
+    value: settings.maxAttemptsPerHour,
+    errors: settings.getErrors('maxAttemptsPerHour'),
+}) }}

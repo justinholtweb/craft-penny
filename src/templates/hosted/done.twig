@@ -1,0 +1,24 @@
+{% extends "penny/hosted/_layout" %}
+
+{% set pageTitle = "Thank you"|t('penny') %}
+{% set brandingAccent = invite.getBranding().accentColor %}
+
+{% block header %}
+    <h1>{{ "That’s it — thank you"|t('penny') }}</h1>
+{% endblock %}
+
+{% block content %}
+    <div class="penny-card">
+        {% if invite.requireReview %}
+            <p>{{ "Your answers have been sent over for review. Somebody will look at them before they go on the site."|t('penny') }}</p>
+        {% else %}
+            <p>{{ "Your answers have been saved to the site."|t('penny') }}</p>
+        {% endif %}
+
+        <p class="penny-quiet">{{ "This link has now been used, so it will not open again. You can close this tab."|t('penny') }}</p>
+
+        {% if invite.getBranding().signOff %}
+            <p>{{ invite.getBranding().signOff }}</p>
+        {% endif %}
+    </div>
+{% endblock %}

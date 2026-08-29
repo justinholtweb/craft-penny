@@ -1,0 +1,42 @@
+{% import "_includes/forms" as forms %}
+
+{% set prefix = 'targets[' ~ index ~ ']' %}
+
+<div class="penny-target" data-index="{{ index }}">
+    <div class="penny-target-header">
+        <h3>{{ "Target"|t('penny') }}</h3>
+        <button type="button" class="delete icon penny-remove-target" title="{{ 'Remove'|t('penny') }}"></button>
+    </div>
+
+    {% if target.id %}{{ hiddenInput(prefix ~ '[id]', target.id) }}{% endif %}
+
+    {{ forms.selectField({
+        label: "What kind"|t('penny'),
+        name: prefix ~ '[kind]',
+        options: [
+            { value: 'element', label: "Edit something that exists"|t('penny') },
+            { value: 'new', label: "Create something new"|t('penny') ~ (isPro ? '' : ' (Pro)'), disabled: not isPro },
+        ],
+        value: target.kind,
+        class: 'penny-kind-select',
+    }) }}
+
+    {{ forms.selectField({
+        label: "Type"|t('penny'),
+        name: prefix ~ '[elementType]',
+        options: elementTypeOptions,
+        value: target.elementType,
+        class: 'penny-element-type-select',
+    }) }}
+
+    <div class="penny-target-body">
+        {% include 'penny/invites/_target-body' with {
+            target: target,
+            index: index,
+            tabs: plugin.scope.selectableLayoutElements(target),
+            sectionOptions: sectionOptions,
+            entryTypeOptions: [],
+            plugin: plugin,
+        } only %}
+    </div>
+</div>

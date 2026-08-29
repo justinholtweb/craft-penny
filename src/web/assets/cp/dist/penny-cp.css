@@ -1,0 +1,87 @@
+/* Penny — control panel. */
+
+/* --- the invite editor ------------------------------------------------- */
+
+.penny-target {
+    border: 1px solid var(--hairline-color, #e5e7eb);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    background: var(--gray-050, #fbfbfc);
+}
+
+.penny-target-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.penny-target-header h3 {
+    margin: 0;
+}
+
+.penny-scope-tab {
+    margin-bottom: 0.75rem;
+}
+
+.penny-scope-tab h5 {
+    margin: 0 0 0.25rem;
+    color: var(--medium-text-color, #606d7b);
+}
+
+.penny-scope-fields {
+    border-left: 2px solid var(--hairline-color, #e5e7eb);
+    padding-left: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.penny-note {
+    margin-top: 0.5rem;
+}
+
+.penny-actions .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.penny-link-box {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.penny-events td.code {
+    font-size: 0.8125rem;
+}
+
+/* --- an invited recipient's control panel session ----------------------- */
+
+/*
+ * Cosmetic only. What actually stops an invited session touching anything outside its scope is the
+ * save guard in Plugin::registerSessionGuard(); this exists so the recipient is not offered doors
+ * that will be shut in their face.
+ */
+body.penny-invited-session #global-sidebar,
+body.penny-invited-session #global-header .header-actions .search-container,
+body.penny-invited-session #crumbs,
+body.penny-invited-session .btn.menubtn[data-icon="settings"],
+body.penny-invited-session #user-info .menubtn,
+body.penny-invited-session [data-action="entries/delete"] {
+    display: none !important;
+}
+
+body.penny-invited-session #main-container,
+body.penny-invited-session #content-container {
+    margin-left: 0 !important;
+}
+
+body.penny-invited-session #page-title::after {
+    content: attr(data-penny-note);
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--medium-text-color, #606d7b);
+}

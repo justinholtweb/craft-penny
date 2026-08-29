@@ -1,0 +1,68 @@
+{# Everything in a target row below its kind and element-type selects. Rendered both server-side
+   for existing rows and over Ajax whenever either of those two selects changes. #}
+{% import "_includes/forms" as forms %}
+
+{% set prefix = 'targets[' ~ index ~ ']' %}
+{% set isNew = target.getIsNew() %}
+
+{# Entry types come from the controller when this is re-rendered over Ajax. On the first render of
+   a saved row nobody has asked for them yet, so look them up from the section that is already
+   chosen — otherwise reopening an invite shows "choose a section first" under a chosen section. #}
+{% set resolvedEntryTypes = entryTypeOptions ?? [] %}
+{% if not resolvedEntryTypes and target.sectionId %}
+    {% set section = craft.app.entries.getSectionById(target.sectionId) %}
+    {% set resolvedEntryTypes = section ? section.getEntryTypes()|map(t => { value: t.id, label: t.name }) : [] %}
+{% endif %}
+
+<div class="penny-target-picker">
+    {% if isNew %}
+        {{ forms.selectField({
+            label: "Section"|t('penny'),
+            name: prefix ~ '[sectionId]',
+            options: [{ value: '', label: "Choose a section"|t('penny') }]|merge(sectionOptions),
+            value: target.sectionId,
+            class: 'penny-section-select',
+        }) }}
+
+        {{ forms.selectField({
+            label: "Entry type"|t('penny'),
+            name: prefix ~ '[entryTypeId]',
+            options: resolvedEntryTypes ? resolvedEntryTypes : [{ value: '', label: "Choose a section first"|t('penny') }],
+            value: target.entryTypeId,
+            class: 'penny-entry-type-select',
+        }) }}
+    {% else %}
+        {{ forms.elementSelectField({
+            label: "What they edit"|t('penny'),
+            name: prefix ~ '[elementId]',
+            elementType: target.elementType,
+            limit: 1,
+            siteId: target.siteId,
+            elements: target.getElement() ? [target.getElement()] : [],
+            class: 'penny-element-select',
+        }) }}
+    {% endif %}
+</div>
+
+{{ forms.textField({
+    label: "What to call it"|t('penny'),
+    instructions: "Shown to the recipient as the heading for this section. Leave empty to use the element’s own name."|t('penny'),
+    name: prefix ~ '[label]',
+    value: target.label,
+}) }}
+
+{{ forms.textareaField({
+    label: "Instructions"|t('penny'),
+    instructions: "A sentence telling them what you want."|t('penny'),
+    name: prefix ~ '[instructions]',
+    rows: 2,
+    value: target.instructions,
+}) }}
+
+<div class="penny-target-scope">
+    {% include 'penny/invites/_target-scope' with {
+        target: target,
+        index: index,
+        tabs: tabs,
+    } only %}
+</div>

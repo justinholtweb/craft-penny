@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Penny">
+  <defs>
+    <linearGradient id="penny-face" x1="24" y1="14" x2="76" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D9955C"/>
+      <stop offset="0.55" stop-color="#B87333"/>
+      <stop offset="1" stop-color="#8C5322"/>
+    </linearGradient>
+  </defs>
+
+  <!-- The coin, seen very slightly on edge, so it reads as a thing you hand over. -->
+  <ellipse cx="50" cy="54" rx="38" ry="38" fill="#6E3F19"/>
+  <ellipse cx="50" cy="48" rx="38" ry="38" fill="url(#penny-face)"/>
+  <ellipse cx="50" cy="48" rx="31" ry="31" fill="none" stroke="#7A4A1E" stroke-width="2" opacity="0.55"/>
+
+  <!-- One slot, one use: the coin has a single keyway through it. -->
+  <path d="M50 30a7 7 0 0 1 7 7c0 3.1-2 5.2-4 6.4l1.6 17.2a4.7 4.7 0 0 1-4.6 5.2 4.7 4.7 0 0 1-4.6-5.2L47 43.4c-2-1.2-4-3.3-4-6.4a7 7 0 0 1 7-7z"
+        fill="#FDF3E7"/>
+</svg>

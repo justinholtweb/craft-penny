@@ -1,0 +1,250 @@
+{% extends "_layouts/cp" %}
+{% import "_includes/forms" as forms %}
+
+{% set fullPageForm = true %}
+{% set crumbs = [{ label: "Penny"|t('penny'), url: url('penny/invites') }] %}
+{% set status = invite.getInviteStatus() %}
+{% set isPro = plugin.isPro() %}
+
+{% block actionButton %}
+    <div class="btngroup">
+        <button type="submit" class="btn submit">{{ isNew ? "Create the invite"|t('penny') : "Save"|t('penny') }}</button>
+    </div>
+{% endblock %}
+
+{% block content %}
+    {{ actionInput('penny/invites/save') }}
+    {{ redirectInput('penny/invites/{id}') }}
+    {% if not isNew %}{{ hiddenInput('inviteId', invite.id) }}{% endif %}
+
+    {{ forms.textField({
+        label: "Name"|t('penny'),
+        instructions: "For you, not for them. “Bio from Sam”, “September newsletter copy”."|t('penny'),
+        id: 'title',
+        name: 'title',
+        value: invite.title,
+        errors: invite.getErrors('title'),
+        required: true,
+        autofocus: isNew,
+    }) }}
+
+    {{ forms.textareaField({
+        label: "Message to the recipient"|t('penny'),
+        instructions: "Shown at the top of the page they land on."|t('penny'),
+        id: 'message',
+        name: 'message',
+        rows: 3,
+        value: invite.message,
+        placeholder: "Hi — could you fill in your bio and add a headshot? Thanks!"|t('penny'),
+    }) }}
+
+    <hr>
+
+    <h2>{{ "What they can work on"|t('penny') }}</h2>
+
+    {% if invite.getErrors('targets') %}
+        <ul class="errors">
+            {% for error in invite.getErrors('targets') %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+
+    <div id="penny-targets"
+         data-lite="{{ isPro ? '0' : '1' }}"
+         data-site-id="{{ invite.targetSiteId }}">
+        {% for target in invite.getTargets() %}
+            {% include 'penny/invites/_target-row' with {
+                target: target,
+                index: loop.index0,
+                isPro: isPro,
+                elementTypeOptions: elementTypeOptions,
+                sectionOptions: sectionOptions,
+                plugin: plugin,
+            } only %}
+        {% else %}
+            {% include 'penny/invites/_target-row' with {
+                target: create('justinholtweb\\penny\\models\\Target', { siteId: invite.targetSiteId }),
+                index: 0,
+                isPro: isPro,
+                elementTypeOptions: elementTypeOptions,
+                sectionOptions: sectionOptions,
+                plugin: plugin,
+            } only %}
+        {% endfor %}
+    </div>
+
+    <button type="button" class="btn add icon" id="penny-add-target"
+            {{ not isPro ? 'disabled' : '' }}>
+        {{ isPro ? "Add another"|t('penny') : "Add another (Pro)"|t('penny') }}
+    </button>
+
+    {% if not isNew and events %}
+        <hr>
+        <h2>{{ "What has happened"|t('penny') }}</h2>
+
+        <table class="data fullwidth penny-events">
+            <thead>
+                <tr>
+                    <th>{{ "Event"|t('penny') }}</th>
+                    <th>{{ "Detail"|t('penny') }}</th>
+                    <th>{{ "From"|t('penny') }}</th>
+                    <th>{{ "When"|t('penny') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                    <tr>
+                        <td>{{ event.type.label() }}</td>
+                        <td class="light">{{ event.detail }}</td>
+                        <td class="light code">{{ event.ip }}</td>
+                        <td class="light">{{ event.date|datetime('short') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}
+
+{% block details %}
+    <div class="meta">
+        {% if not isNew %}
+            <div class="data">
+                <h5 class="heading">{{ "Status"|t('penny') }}</h5>
+                <div class="value">
+                    <span class="status {{ status.color() }}"></span>{{ status.label() }}
+                </div>
+            </div>
+        {% endif %}
+
+        {{ forms.selectField({
+            label: "Where they edit"|t('penny'),
+            id: 'surface',
+            name: 'surface',
+            options: [
+                { value: 'hosted', label: "Penny page"|t('penny') },
+                { value: 'cp', label: "Control panel"|t('penny') ~ (isPro ? '' : ' (Pro)'), disabled: not isPro },
+            ],
+            value: invite.surface,
+            errors: invite.getErrors('surface'),
+            instructions: invite.getSurface().description(),
+        }) }}
+
+        {{ forms.selectField({
+            label: "Site"|t('penny'),
+            id: 'targetSiteId',
+            name: 'targetSiteId',
+            options: craft.app.sites.allSites|map(s => { value: s.id, label: s.name }),
+            value: invite.targetSiteId,
+        }) }}
+
+        {{ forms.dateTimeField({
+            label: "Expires"|t('penny'),
+            id: 'expiryDate',
+            name: 'expiryDate',
+            value: invite.expiryDate,
+            errors: invite.getErrors('expiryDate'),
+            instructions: "Leave empty for no deadline. The link also dies the moment it is submitted."|t('penny'),
+        }) }}
+
+        {{ forms.lightswitchField({
+            label: "Hold for review"|t('penny'),
+            id: 'requireReview',
+            name: 'requireReview',
+            on: invite.requireReview,
+            disabled: not isPro,
+            instructions: isPro
+                ? "The submission lands as a draft for you to approve, instead of going live."|t('penny')
+                : "Pro."|t('penny'),
+        }) }}
+    </div>
+
+    <div class="meta">
+        {{ forms.textField({
+            label: "Recipient name"|t('penny'),
+            id: 'recipientName',
+            name: 'recipientName',
+            value: invite.recipientName,
+        }) }}
+
+        {{ forms.textField({
+            label: "Recipient email"|t('penny'),
+            id: 'recipientEmail',
+            name: 'recipientEmail',
+            type: 'email',
+            value: invite.recipientEmail,
+            errors: invite.getErrors('recipientEmail'),
+            instructions: isPro
+                ? "Penny can email the link here."|t('penny')
+                : "Kept for your records. Emailing is a Pro feature."|t('penny'),
+        }) }}
+
+        {{ forms.textareaField({
+            label: "Notify on submission"|t('penny'),
+            id: 'notifyEmails',
+            name: 'notifyEmails',
+            rows: 2,
+            value: invite.getNotifyEmails()|join("\n"),
+            disabled: not isPro,
+        }) }}
+    </div>
+
+    {% if not isNew %}
+        <div class="meta read-only">
+            <div class="data">
+                <h5 class="heading">{{ "Created"|t('penny') }}</h5>
+                <div class="value">{{ invite.dateCreated|datetime('short') }}</div>
+            </div>
+            {% if invite.dateSent %}
+                <div class="data">
+                    <h5 class="heading">{{ "Sent"|t('penny') }}</h5>
+                    <div class="value">{{ invite.dateSent|datetime('short') }}</div>
+                </div>
+            {% endif %}
+            {% if invite.dateFirstOpened %}
+                <div class="data">
+                    <h5 class="heading">{{ "First opened"|t('penny') }}</h5>
+                    <div class="value">{{ invite.dateFirstOpened|datetime('short') }}</div>
+                </div>
+            {% endif %}
+            {% if invite.dateSubmitted %}
+                <div class="data">
+                    <h5 class="heading">{{ "Submitted"|t('penny') }}</h5>
+                    <div class="value">{{ invite.dateSubmitted|datetime('short') }}</div>
+                </div>
+            {% endif %}
+        </div>
+
+        {# Never a nested <form>: this block renders inside the page form, and a second action
+           input would make the Save button run whichever action came last. #}
+        <div class="meta penny-actions" data-invite-id="{{ invite.id }}">
+            {% if status.value == 'awaitingReview' and canReview %}
+                <button type="button" class="btn submit penny-action" data-action="penny/invites/approve">
+                    {{ "Approve and publish"|t('penny') }}
+                </button>
+            {% endif %}
+
+            <button type="button" class="btn penny-action" data-action="penny/invites/reissue">
+                {{ "Re-issue the link"|t('penny') }}
+            </button>
+
+            {% if isPro and invite.recipientEmail %}
+                <button type="button" class="btn penny-action" data-action="penny/invites/send">
+                    {{ "Email a fresh link"|t('penny') }}
+                </button>
+            {% endif %}
+
+            {% if canDelete and status.isLive() %}
+                <button type="button" class="btn penny-action" data-action="penny/invites/revoke"
+                        data-confirm="{{ "Turn this link off? It cannot be turned back on — you would issue a new one."|t('penny') }}">
+                    {{ "Revoke"|t('penny') }}
+                </button>
+            {% endif %}
+
+            {% if canDelete %}
+                <button type="button" class="btn penny-action" data-action="penny/invites/delete"
+                        data-confirm="{{ "Delete this invite? The link stops working immediately."|t('penny') }}">
+                    {{ "Delete"|t('penny') }}
+                </button>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

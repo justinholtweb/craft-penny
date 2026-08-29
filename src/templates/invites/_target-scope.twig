@@ -1,0 +1,45 @@
+{# The "which fields" half of a target row.
+
+   Separate from the picker above it on purpose. When the chosen element changes, only this needs
+   rebuilding — and rebuilding the picker along with it would tear out the element select while
+   Craft is still animating the newly chosen chip into it, leaving the chip stranded on the page. #}
+{% import "_includes/forms" as forms %}
+
+{% set prefix = 'targets[' ~ index ~ ']' %}
+
+{{ forms.selectField({
+    label: "Which fields"|t('penny'),
+    name: prefix ~ '[scopeMode]',
+    options: [
+        { value: 'all', label: "Everything on this element"|t('penny') },
+        { value: 'some', label: "Only the fields I pick"|t('penny') },
+    ],
+    value: target.getIsWholeLayout() ? 'all' : 'some',
+    class: 'penny-scope-mode',
+}) }}
+
+<div class="penny-scope-fields {{ target.getIsWholeLayout() ? 'hidden' : '' }}">
+    {% if tabs|length %}
+        {% for tabName, layoutElements in tabs %}
+            <div class="penny-scope-tab">
+                <h5>{{ tabName }}</h5>
+                {% for layoutElement in layoutElements %}
+                    {{ forms.checkbox({
+                        label: layoutElement.label() ?? layoutElement.attribute(),
+                        name: prefix ~ '[layoutElementUids][]',
+                        value: layoutElement.uid,
+                        checked: not target.getIsWholeLayout() and layoutElement.uid in target.layoutElementUids,
+                    }) }}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="light">{{ "Pick something above and its fields will appear here."|t('penny') }}</p>
+    {% endif %}
+</div>
+
+{% if target.elementType and not target.getSupportsDrafts() %}
+    <p class="light penny-note">
+        {{ "Craft keeps no drafts for this kind of content, so there is no saved progress and no review step — what the recipient types is written when they submit."|t('penny') }}
+    </p>
+{% endif %}

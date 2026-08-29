@@ -1,0 +1,10 @@
+{% extends "_layouts/elementindex" %}
+
+{% set title = "Invites"|t('penny') %}
+{% set elementType = 'justinholtweb\\penny\\elements\\Invite' %}
+
+{% block actionButton %}
+    {% if canManage %}
+        <a href="{{ url('penny/invites/new') }}" class="btn submit add icon">{{ "New invite"|t('penny') }}</a>
+    {% endif %}
+{% endblock %}

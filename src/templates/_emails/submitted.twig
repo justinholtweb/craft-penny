@@ -1,0 +1,21 @@
+{% extends "penny/_emails/_shell" %}
+
+{% block body %}
+    <p>{{ "“{name}” has been filled in."|t('penny', { name: invite.getUiLabel() }) }}</p>
+
+    {% if invite.recipientName or invite.recipientEmail %}
+        <p style="color:#6b7280;">{{ "By {who}."|t('penny', { who: invite.recipientName ?: invite.recipientEmail }) }}</p>
+    {% endif %}
+
+    {% if invite.requireReview %}
+        <p><strong>{{ "It is waiting for your approval and is not live yet."|t('penny') }}</strong></p>
+    {% else %}
+        <p>{{ "The changes are live."|t('penny') }}</p>
+    {% endif %}
+
+    <p style="margin:28px 0;">
+        <a href="{{ cpUrl }}" style="display:inline-block;background:{{ settings.getAccentColor() }};color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:6px;font-weight:600;">
+            {{ "Take a look"|t('penny') }}
+        </a>
+    </p>
+{% endblock %}

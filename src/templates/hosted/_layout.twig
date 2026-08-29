@@ -1,0 +1,45 @@
+{# Registered here rather than in the controller so that every page served through this layout —
+   the form, the thank-you, and the "this link is closed" one — gets the same styling. Doing it per
+   action means the pages nobody thinks about go out unstyled. #}
+{% do craft.app.view.registerAssetBundle('justinholtweb\\penny\\web\\assets\\hosted\\HostedAsset') %}
+
+{# The hosted page's own shell. Deliberately not `_layouts/cp`: this is served from a control panel
+   route so that field inputs work, but it must not look or behave like the control panel. No nav,
+   no breadcrumbs, no global search, no way out. #}
+{% set accent = brandingAccent ?? settings.getAccentColor() %}
+{% set logo = brandingLogo ?? (settings.logoAssetId ? craft.assets.id(settings.logoAssetId).one() : null) %}
+<!DOCTYPE html>
+<html lang="{{ craft.app.language|split('-')|first }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ pageTitle ?? "Content request"|t('penny') }}</title>
+    {% html at head %}
+        <style>:root { --penny-accent: {{ accent }}; }</style>
+    {% endhtml %}
+    {{ head() }}
+</head>
+<body class="penny-hosted">
+    {{ beginBody() }}
+
+    <div class="penny-shell">
+        <header class="penny-header">
+            {% if logo %}
+                <img class="penny-logo" src="{{ logo.getUrl({ width: 320 }) ?? logo.getUrl() }}" alt="">
+            {% endif %}
+            {% block header %}{% endblock %}
+        </header>
+
+        <main class="penny-main">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="penny-footer">
+            {% block footer %}{% endblock %}
+        </footer>
+    </div>
+
+    {{ endBody() }}
+</body>
+</html>

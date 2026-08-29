@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Penny">
+  <path fill-rule="evenodd" clip-rule="evenodd"
+        d="M50 10a38 38 0 1 0 0 76 38 38 0 0 0 0-76zm0 8a30 30 0 1 1 0 60 30 30 0 0 1 0-60z"/>
+  <path d="M50 30a7 7 0 0 1 7 7c0 3.1-2 5.2-4 6.4l1.6 17.2a4.7 4.7 0 0 1-4.6 5.2 4.7 4.7 0 0 1-4.6-5.2L47 43.4c-2-1.2-4-3.3-4-6.4a7 7 0 0 1 7-7z"/>
+</svg>

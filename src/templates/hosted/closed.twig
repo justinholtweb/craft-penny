@@ -1,0 +1,21 @@
+{% extends "penny/hosted/_layout" %}
+
+{% set pageTitle = "This link is closed"|t('penny') %}
+
+{% block header %}
+    <h1>{{ result.message }}</h1>
+{% endblock %}
+
+{% block content %}
+    <div class="penny-card penny-card--quiet">
+        {% if result.reason == 'submitted' %}
+            <p>{{ "Thanks — this one has already been filled in. There is nothing left to do."|t('penny') }}</p>
+        {% elseif result.reason == 'expired' %}
+            <p>{{ "The deadline on this request has passed. Ask whoever sent it to you for a fresh link."|t('penny') }}</p>
+        {% elseif result.reason == 'throttled' %}
+            <p>{{ "Too many attempts have come from this connection. Wait an hour and try again."|t('penny') }}</p>
+        {% else %}
+            <p>{{ "Check that you copied the whole link, including everything after the last slash. If it still does not work, ask whoever sent it to you for a new one."|t('penny') }}</p>
+        {% endif %}
+    </div>
+{% endblock %}

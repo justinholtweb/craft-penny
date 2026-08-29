@@ -1,0 +1,75 @@
+{% extends "penny/hosted/_layout" %}
+
+{% set branding = invite.getBranding() %}
+{% set brandingAccent = branding.accentColor %}
+{% set brandingLogo = branding.getLogo() %}
+{% set heading = branding.heading ?: (settings.hostedHeading ?: "Could you fill this in?"|t('penny')) %}
+{% set pageTitle = heading %}
+{% set canSaveProgress = panels|filter(p => p.progressive)|length > 0 %}
+
+{% block header %}
+    <h1>{{ heading }}</h1>
+
+    {% if invite.recipientName %}
+        <p class="penny-quiet">{{ "For {name}"|t('penny', { name: invite.recipientName }) }}</p>
+    {% endif %}
+
+    {% if invite.expiryDate %}
+        <p class="penny-deadline">{{ "Please do this by {date}."|t('penny', { date: invite.expiryDate|datetime('long') }) }}</p>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if invite.message %}
+        <div class="penny-message">{{ invite.message|nl2br }}</div>
+    {% endif %}
+
+    {% if hasErrors %}
+        <div class="penny-card penny-card--error">
+            <p>{{ "Some of this could not be saved. Have a look at the notes below and try again — nothing has been submitted yet."|t('penny') }}</p>
+        </div>
+    {% endif %}
+
+    <form method="post" accept-charset="UTF-8" enctype="multipart/form-data" id="penny-form" class="penny-form">
+        {{ csrfInput() }}
+        {{ actionInput('penny/hosted/submit') }}
+        {{ hiddenInput('key', key) }}
+
+        {% for panel in panels %}
+            <section class="penny-card penny-panel">
+                <h2>{{ panel.target.getDisplayLabel() }}</h2>
+
+                {% if panel.target.instructions %}
+                    <p class="penny-instructions">{{ panel.target.instructions }}</p>
+                {% endif %}
+
+                {% if panel.errors %}
+                    <ul class="penny-errors">
+                        {% for error in panel.errors %}<li>{{ error }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if panel.fields %}
+                    <div class="penny-fields">{{ panel.fields|raw }}</div>
+                {% else %}
+                    <p class="penny-quiet">{{ "This is not available any more. You can still submit the rest."|t('penny') }}</p>
+                {% endif %}
+            </section>
+        {% endfor %}
+
+        <div class="penny-actions">
+            <button type="submit" class="penny-btn penny-btn--primary">{{ "Send it in"|t('penny') }}</button>
+
+            {% if canSaveProgress %}
+                <button type="button" class="penny-btn" id="penny-save-progress">{{ "Save and finish later"|t('penny') }}</button>
+                <p class="penny-quiet penny-save-note">
+                    {{ "Saving keeps your work without sending it. The link stays open until you send it in, or until it expires."|t('penny') }}
+                </p>
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}
+
+{% block footer %}
+    <p class="penny-quiet">{{ "This is a one-time link. Once you send this in, it stops working."|t('penny') }}</p>
+{% endblock %}

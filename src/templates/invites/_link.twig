@@ -1,0 +1,55 @@
+{% extends "_layouts/cp" %}
+
+{% set title = "Invite link"|t('penny') %}
+{% set crumbs = [
+    { label: "Penny"|t('penny'), url: url('penny/invites') },
+    { label: invite.getUiLabel(), url: invite.getCpEditUrl() },
+] %}
+
+{% block content %}
+    <div class="readable">
+        {% if url %}
+            <h1>{{ "Here is the link"|t('penny') }}</h1>
+
+            <p>{{ "Copy it now. Penny stores only a hash of it, so this is the only time it can be shown — after this the choices are to re-issue a new link or delete the invite."|t('penny') }}</p>
+
+            <div class="penny-link-box">
+                <input type="text" class="text fullwidth code" id="penny-link" value="{{ url }}" readonly>
+                <button type="button" class="btn" id="penny-copy">{{ "Copy"|t('penny') }}</button>
+            </div>
+
+            <p class="light">
+                {% if invite.expiryDate %}
+                    {{ "It stops working on {date}, or as soon as it has been submitted once."|t('penny', { date: invite.expiryDate|datetime('short') }) }}
+                {% else %}
+                    {{ "It stops working as soon as it has been submitted once."|t('penny') }}
+                {% endif %}
+            </p>
+
+            {% if invite.recipientEmail and invite.dateSent %}
+                <p class="light">{{ "It has also been emailed to {email}."|t('penny', { email: invite.recipientEmail }) }}</p>
+            {% endif %}
+        {% else %}
+            <h1>{{ "That link is no longer available"|t('penny') }}</h1>
+            <p>{{ "Penny only ever shows a link once, on the screen that mints it. Re-issue the invite to get a new one — which turns the old link off."|t('penny') }}</p>
+
+            <form method="post" accept-charset="UTF-8">
+                {{ csrfInput() }}
+                {{ actionInput('penny/invites/reissue') }}
+                {{ hiddenInput('inviteId', invite.id) }}
+                <button type="submit" class="btn submit">{{ "Re-issue the link"|t('penny') }}</button>
+            </form>
+        {% endif %}
+
+        <p><a href="{{ invite.getCpEditUrl() }}">{{ "Back to the invite"|t('penny') }}</a></p>
+    </div>
+{% endblock %}
+
+{% js %}
+    document.getElementById('penny-copy')?.addEventListener('click', function() {
+        const input = document.getElementById('penny-link');
+        input.select();
+        navigator.clipboard.writeText(input.value);
+        this.textContent = {{ "Copied"|t('penny')|json_encode|raw }};
+    });
+{% endjs %}
