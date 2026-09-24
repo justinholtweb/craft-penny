@@ -62,15 +62,15 @@ body.penny-hosted #notifications-wrapper > .notification.error:empty {
     margin-top: 0.75rem;
     padding: 0.25rem 0.625rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--penny-accent, #B87333) 14%, white);
-    color: color-mix(in srgb, var(--penny-accent, #B87333) 70%, black);
+    background: color-mix(in srgb, var(--penny-accent, #ED8228) 14%, white);
+    color: color-mix(in srgb, var(--penny-accent, #ED8228) 70%, black);
     font-size: 0.8125rem;
     font-weight: 600;
 }
 
 .penny-message {
     background: #fffdf7;
-    border-left: 3px solid var(--penny-accent, #B87333);
+    border-left: 3px solid var(--penny-accent, #ED8228);
     padding: 1rem 1.125rem;
     border-radius: 0 6px 6px 0;
     margin-bottom: 1.5rem;
@@ -155,8 +155,8 @@ body.penny-hosted #notifications-wrapper > .notification.error:empty {
 }
 
 .penny-btn--primary {
-    background: var(--penny-accent, #B87333);
-    border-color: var(--penny-accent, #B87333);
+    background: var(--penny-accent, #ED8228);
+    border-color: var(--penny-accent, #ED8228);
     color: #ffffff;
 }
 

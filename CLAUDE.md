@@ -87,6 +87,12 @@ Two guards, because permissions are section-shaped and Penny's scope is element-
    `Sessions::enforceFieldScope()`, which restores out-of-scope field values from the canonical
    element before the save goes through.
 
+The session needs `saveEntries` + `savePeerEntryDrafts` to work on somebody else's draft, and those
+are exactly what *Apply draft* asks for. So `Sessions::refusesCanonicalSave()` refuses the live copy
+of anything that keeps drafts, in both guards, which also takes the button off the screen (Craft
+gates it on `canSaveCanonical()`). The only way work goes live from a session is the hand-in bar →
+`penny/session/hand-in` → `Sessions::handIn()`, which lifts that refusal for its own request.
+
 ## Traps found while building this
 
 - **Craft ignores `$event->isValid` on `Elements::EVENT_BEFORE_SAVE_ELEMENT`.** It constructs the
@@ -131,6 +137,14 @@ Two guards, because permissions are section-shaped and Penny's scope is element-
   an override.
 - **Craft handles have no hyphens in some places and do in others** — plugin handles may be
   kebab-case, so "a handle can't contain a hyphen" is not a guarantee you can build on.
+- **Only nested elements have `getOwner()`.** Calling it on anything else goes through `__call` and
+  throws `UnknownMethodException` — and the control panel asks the authorize events about the
+  signed-in *user* on every page, so an unguarded call 500s the whole CP session. The console checks
+  never render a CP page and never saw it; only walking it in a browser did.
+- **Applying a draft writes change tracking after the request**, from rows it read while the draft
+  was applied — still stamped with the id of whoever edited the draft. Hard-delete that user in the
+  same request and the deferred insert fails its foreign key and 500s a hand-in that has already
+  succeeded. Delete in `onAfterRequest()`, registered after the apply, so it runs after Craft's own.
 - **`Craft::$app->getRequest()` is a `craft\console\Request` outside a web request** and has no
   `getUserIP()`. Anything reachable from a console command has to type-check first.
 - **Project config writes are buffered until the request ends**, so a bare script switching the
@@ -146,13 +160,14 @@ No local PHP on this Mac. Everything runs inside the plugin-testing container:
 
 ```sh
 cd ~/Sites/plugin-testing
-ddev exec php /var/www/craft-penny/tests/integration/checks.php    # 64 checks
+ddev exec php /var/www/craft-penny/tests/integration/checks.php    # 72 checks
 ddev exec php /var/www/craft-penny/tests/integration/edition.php pro
 ddev exec bash -c 'find /var/www/craft-penny/src -name "*.php" -print0 | xargs -0 -n1 php -l'
 ```
 
 `tests/integration/walkthrough.php setup|check|teardown` builds a fixture section, entry and live
-invite and prints the link, for walking the whole thing over HTTP the way a recipient would.
+invite and prints the link (`setup cp` for the Pro control panel surface), for walking the whole
+thing over HTTP the way a recipient would.
 
 The checks are idempotent and self-cleaning — fields, entry type, section, entry and every invite
 are removed in a `finally` block, pass or fail, and the edition is put back.

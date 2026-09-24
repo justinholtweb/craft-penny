@@ -274,6 +274,108 @@
         });
     }
 
+    // --- an invited recipient's hand-in bar ----------------------------------
+
+    /*
+     * Craft's editor can save and it can apply drafts, but it has no way to say "I'm finished" —
+     * and the session is not allowed to apply its own drafts. This bar is that missing step, and
+     * the only way out of the session short of the link expiring or being revoked.
+     *
+     * Called by an inline script Plugin::registerSessionGuard() prints on every page of the session.
+     */
+    window.PennyHandIn = function(config) {
+        if (document.querySelector('.penny-hand-in')) {
+            return;
+        }
+
+        var bar = document.createElement('div');
+        bar.className = 'penny-hand-in';
+
+        var links = document.createElement('nav');
+        links.className = 'penny-hand-in-targets';
+        links.setAttribute('aria-label', Craft.t('penny', 'What you were invited to fill in'));
+
+        (config.targets || []).forEach(function(target) {
+            var link = document.createElement('a');
+            link.href = target.url;
+            link.textContent = target.label;
+
+            if (window.location.href.split('#')[0].indexOf(target.url.split('?')[0]) === 0) {
+                link.setAttribute('aria-current', 'page');
+            }
+
+            links.appendChild(link);
+        });
+
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn submit';
+        button.textContent = Craft.t('penny', 'I’m finished, hand it in');
+
+        var note = document.createElement('p');
+        note.className = 'penny-hand-in-note';
+        note.textContent = config.review
+            ? Craft.t('penny', 'Your changes are saved as you go. Handing in sends them for review and closes this link.')
+            : Craft.t('penny', 'Your changes are saved as you go. Handing in puts them on the site and closes this link.');
+
+        button.addEventListener('click', function() {
+            if (!window.confirm(Craft.t('penny', 'Hand this in? You won’t be able to make more changes afterwards.'))) {
+                return;
+            }
+
+            button.classList.add('loading');
+            button.disabled = true;
+
+            flushEditor()
+                .then(function() {
+                    return Craft.sendActionRequest('POST', 'penny/session/hand-in');
+                })
+                .then(function(response) {
+                    // Nothing on this page is worth warning about any more: the work is in, and
+                    // the account behind the page has already been deleted.
+                    window.onbeforeunload = null;
+                    $(window).off('beforeunload');
+                    window.location.href = response.data.redirect;
+                })
+                .catch(function(error) {
+                    button.classList.remove('loading');
+                    button.disabled = false;
+                    Craft.cp.displayError(
+                        (error && error.response && error.response.data && error.response.data.message) ||
+                        Craft.t('penny', 'Something went wrong.')
+                    );
+                });
+        });
+
+        bar.appendChild(links);
+        bar.appendChild(note);
+        bar.appendChild(button);
+        document.body.appendChild(bar);
+        document.body.classList.add('penny-has-hand-in');
+    };
+
+    /*
+     * Makes sure the last few keystrokes are in the draft before handing in.
+     *
+     * The element editor autosaves on a timer, so a recipient who types and immediately clicks
+     * would otherwise hand in the version from a second ago. Best effort: a page with no editor,
+     * or a Craft whose editor looks different, just hands in what is saved.
+     */
+    function flushEditor() {
+        var form = Craft.cp && Craft.cp.$primaryForm;
+        var editor = form && form.data('elementEditor');
+
+        if (editor && typeof editor.checkForm === 'function') {
+            try {
+                return Promise.resolve(editor.checkForm(true)).catch(function() {});
+            } catch (e) {
+                return Promise.resolve();
+            }
+        }
+
+        return Promise.resolve();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         wireActions();
         wireRepeater();

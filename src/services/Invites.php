@@ -98,6 +98,13 @@ class Invites extends Component
         $key = $this->issueKey($invite);
         $invite->dateRevoked = null;
 
+        // A new link on an invite whose deadline has passed would be dead on arrival, and nobody
+        // re-issues a link hoping for that. It gets the same allowance a new invite would.
+        if ($invite->expiryDate !== null && $invite->expiryDate->getTimestamp() <= time()) {
+            $days = Plugin::getInstance()->getSettings()->defaultExpiryDays;
+            $invite->expiryDate = $days > 0 ? (new DateTime())->modify("+$days days") : null;
+        }
+
         if (!$this->save($invite, runValidation: false)) {
             return null;
         }

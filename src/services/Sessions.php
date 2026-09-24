@@ -5,6 +5,7 @@ namespace justinholtweb\penny\services;
 use Craft;
 use craft\base\Component;
 use craft\base\ElementInterface;
+use craft\base\NestedElementInterface;
 use craft\elements\Asset;
 use craft\elements\Category;
 use craft\elements\Entry;
@@ -35,6 +36,7 @@ class Sessions extends Component
 {
     private ?Invite $_currentInvite = null;
     private bool $_currentInviteLoaded = false;
+    private bool $_handingIn = false;
 
     /**
      * Logs the recipient in and returns where to send them.
@@ -117,9 +119,86 @@ class Sessions extends Component
 
         // Nested elements — Matrix entries, content blocks — belong to whatever owns them, and the
         // owner is the thing scope has an opinion about.
-        $owner = $element->getOwner();
+        // Only nested elements have an owner at all; asking anything else throws.
+        $owner = $element instanceof NestedElementInterface ? $element->getOwner() : null;
 
         return $owner !== null && Plugin::getInstance()->scope->allows($invite, $owner);
+    }
+
+    /**
+     * Whether this save would publish work the recipient has not handed in yet.
+     *
+     * The session holds `saveEntries` and `savePeerEntryDrafts` because it has to be able to work
+     * on a draft of somebody else's entry — and those are exactly the permissions Craft's *Apply
+     * draft* button asks for. Left alone, a recipient could publish their own draft straight past
+     * hold for review. So while the session is live, the live copy of anything that keeps drafts
+     * is not theirs to write; handing in is the one way it changes, and `handIn()` says so.
+     */
+    public function refusesCanonicalSave(ElementInterface $element): bool
+    {
+        $invite = $this->currentInvite();
+
+        if ($invite === null || $this->_handingIn || $element->getIsDraft() || $element->getIsRevision()) {
+            return false;
+        }
+
+        $target = Plugin::getInstance()->scope->targetFor($invite, $element);
+
+        return $target !== null && $target->getSupportsDrafts();
+    }
+
+    /**
+     * The recipient says they are finished.
+     *
+     * Exactly what submitting does on the hosted page — apply the drafts unless the invite is held
+     * for review, spend the link, tell whoever is waiting — and then, because `markSubmitted()`
+     * ends the session, the account is suspended and deleted before the response goes out.
+     */
+    public function handIn(Invite $invite): void
+    {
+        $plugin = Plugin::getInstance();
+        $this->_handingIn = true;
+
+        try {
+            $plugin->editor->submit($invite);
+        } finally {
+            $this->_handingIn = false;
+        }
+
+        $plugin->notifications->notifySubmission($invite);
+    }
+
+    /**
+     * What the hand-in bar at the foot of every control panel page needs to draw itself.
+     *
+     * One link per target, because permissions and the stripped-down nav put the recipient on the
+     * first target's screen and would otherwise leave them no way to find the second.
+     *
+     * @return array{targets: array<int, array{label: string, url: string}>, review: bool}
+     */
+    public function handInBarConfig(Invite $invite): array
+    {
+        $editor = Plugin::getInstance()->editor;
+        $targets = [];
+
+        foreach ($invite->getTargets() as $target) {
+            $element = $editor->workingElement($invite, $target);
+            $url = $element?->getCpEditUrl();
+
+            if ($url === null) {
+                continue;
+            }
+
+            $targets[] = [
+                'label' => $target->getDisplayLabel(),
+                'url' => $url,
+            ];
+        }
+
+        return [
+            'targets' => $targets,
+            'review' => (bool)$invite->requireReview,
+        ];
     }
 
     /**
@@ -221,7 +300,7 @@ class Sessions extends Component
                 Craft::$app->getUserPermissions()->saveUserPermissions($user->id, []);
 
                 if (Plugin::getInstance()->getSettings()->deleteSessionUsers) {
-                    Craft::$app->getElements()->deleteElement($user, hardDelete: true);
+                    $this->deleteAfterRequest($user->id, $invite->id);
                 }
             } catch (Throwable $e) {
                 Craft::error("Could not dispose of the session user for invite $invite->id: " . $e->getMessage(), Plugin::LOG_CATEGORY);
@@ -231,6 +310,33 @@ class Sessions extends Component
         $invite->sessionUserId = null;
 
         Db::update(Table::INVITES, ['sessionUserId' => null], ['id' => $invite->id], updateTimestamp: false);
+    }
+
+    /**
+     * Deletes the account once the request is over, not now.
+     *
+     * Applying a draft copies its change-tracking rows onto the live element in an after-request
+     * callback, still stamped with the id of whoever made the changes — this account. Delete it
+     * first and those inserts fail their foreign key, and the recipient's hand-in ends in a 500
+     * after everything that mattered has already happened. Queued after Craft's own callback, so
+     * the rows land and the delete then nulls their user column like any other.
+     *
+     * The account is already suspended and stripped of permissions by then, so the delay buys
+     * nobody anything.
+     */
+    private function deleteAfterRequest(int $userId, int $inviteId): void
+    {
+        Craft::$app->onAfterRequest(function() use ($userId, $inviteId) {
+            try {
+                $user = Craft::$app->getUsers()->getUserById($userId);
+
+                if ($user !== null) {
+                    Craft::$app->getElements()->deleteElement($user, hardDelete: true);
+                }
+            } catch (Throwable $e) {
+                Craft::error("Could not delete the session user for invite $inviteId: " . $e->getMessage(), Plugin::LOG_CATEGORY);
+            }
+        });
     }
 
     /**

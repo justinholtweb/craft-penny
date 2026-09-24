@@ -25,6 +25,9 @@ use yii\web\Response;
  */
 class HostedController extends Controller
 {
+    /** Where `SessionController` leaves the id of an invite it has just handed in. */
+    public const HANDED_IN_SESSION_KEY = 'penny.handedIn';
+
     protected array|bool|int $allowAnonymous = self::ALLOW_ANONYMOUS_LIVE;
 
     public function actionIndex(string $key): Response
@@ -108,6 +111,7 @@ class HostedController extends Controller
 
         $editor = Plugin::getInstance()->editor;
         $errors = [];
+        $elements = [];
 
         foreach ($invite->getTargets() as $target) {
             $element = $editor->workingElement($invite, $target);
@@ -117,6 +121,8 @@ class HostedController extends Controller
                 continue;
             }
 
+            $elements[$target->id] = $element;
+
             if (!$editor->save($invite, $target, $element)) {
                 $errors[$target->id] = $this->scopedErrors($target, $element);
             }
@@ -124,8 +130,10 @@ class HostedController extends Controller
 
         if ($errors) {
             // Nothing is submitted and the link stays live: a validation failure is the one case
-            // where the recipient has to be able to come back to exactly what they typed.
-            return $this->renderForm($invite, $key, $errors);
+            // where the recipient has to be able to come back to exactly what they typed. So the
+            // form is drawn from the elements that failed, still holding the posted values, and
+            // not reloaded from the database, which only has the last save that succeeded.
+            return $this->renderForm($invite, $key, $errors, $elements);
         }
 
         $editor->submit($invite);
@@ -137,15 +145,47 @@ class HostedController extends Controller
         ], View::TEMPLATE_MODE_CP);
     }
 
+    /**
+     * The thank-you page for a control panel recipient, who arrives here already signed out.
+     *
+     * The invite comes from the session rather than the URL, so this page cannot be pointed at
+     * somebody else's invite, and it is shown once.
+     */
+    public function actionDone(): Response
+    {
+        $session = Craft::$app->getSession();
+        $inviteId = $session->get(self::HANDED_IN_SESSION_KEY);
+        $session->remove(self::HANDED_IN_SESSION_KEY);
+
+        $invite = $inviteId ? Plugin::getInstance()->invites->getInviteById((int)$inviteId) : null;
+
+        if ($invite === null) {
+            return $this->renderClosed(AccessResult::deny(
+                AccessResult::REASON_SUBMITTED,
+                Craft::t('penny', 'This link has already been used.'),
+            ));
+        }
+
+        return $this->renderTemplate('penny/hosted/done', [
+            'invite' => $invite,
+            'settings' => Plugin::getInstance()->getSettings(),
+        ], View::TEMPLATE_MODE_CP);
+    }
+
     // ------------------------------------------------------------------ rendering
 
-    private function renderForm(Invite $invite, string $key, array $errors = []): Response
+    /**
+     * @param array<int, string[]> $errors keyed by target id
+     * @param array<int, ElementInterface> $elements keyed by target id — elements to draw instead
+     * of loading the stored ones
+     */
+    private function renderForm(Invite $invite, string $key, array $errors = [], array $elements = []): Response
     {
         $editor = Plugin::getInstance()->editor;
         $panels = [];
 
         foreach ($invite->getTargets() as $target) {
-            $element = $editor->workingElement($invite, $target);
+            $element = $elements[$target->id] ?? $editor->workingElement($invite, $target);
 
             $panels[] = [
                 'target' => $target,

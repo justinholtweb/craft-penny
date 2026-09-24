@@ -63,7 +63,7 @@ class Settings extends Model
     public int $maxAttemptsPerHour = 20;
 
     /** Default accent colour for the hosted page (Pro branding overrides it per invite). */
-    public string $accentColor = '#B87333';
+    public string $accentColor = '#ED8228';
 
     /** Optional logo shown at the top of the hosted page. */
     public ?int $logoAssetId = null;
@@ -88,7 +88,7 @@ class Settings extends Model
     /**
      * The accent colour, always with its hash.
      *
-     * Craft's colour input posts `B87333`, not `#B87333`, so a template that interpolates the raw
+     * Craft's colour input posts `ED8228`, not `#ED8228`, so a template that interpolates the raw
      * value straight into CSS produces a rule the browser drops.
      */
     public function getAccentColor(): string
@@ -96,7 +96,7 @@ class Settings extends Model
         $value = trim($this->accentColor);
 
         if ($value === '') {
-            return '#B87333';
+            return '#ED8228';
         }
 
         return str_starts_with($value, '#') ? $value : '#' . $value;

@@ -6,12 +6,14 @@
 
 - One-time content invites: pick what a recipient may edit, tick which of its fields they may
   touch, and hand them a single-use link.
-- Targets: an existing entry, a new entry in a section (Pro), a global set, or a category, asset or
-  user (Pro). One per invite in Lite, unlimited in Pro.
+- Targets: an existing entry, a new entry in a section (Pro), a global set, or a category, tag,
+  asset or user (Pro). One per invite in Lite, unlimited in Pro.
 - The Penny page — a standalone editing page rendering Craft's real field inputs, with no Craft
   user account created and no control panel session issued.
 - Temporary control panel sessions (Pro): a scoped, disposable account dropped straight onto the
-  edit screen and deleted afterwards.
+  edit screen, with a hand-in bar linking every target. Handing in applies the drafts (or holds
+  them for review), spends the link, signs the recipient out and deletes the account. The session
+  can save drafts but never apply them itself.
 - Work in progress is held in a Craft draft where the element type supports one, so a half-finished
   session is never visible on the site and closing the tab loses nothing.
 - Hold for review (Pro): a submission lands as a draft for approval instead of going live.

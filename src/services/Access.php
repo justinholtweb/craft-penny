@@ -24,14 +24,13 @@ class Access extends Component
         $plugin = Plugin::getInstance();
         $keys = $plugin->keys;
 
-        if ($keys->tooManyAttempts()) {
-            return AccessResult::deny(
-                AccessResult::REASON_THROTTLED,
-                Craft::t('penny', 'Too many attempts. Try again later.'),
-            );
-        }
+        $throttled = $keys->tooManyAttempts();
 
         if (!$keys->looksLikeKey($key)) {
+            if ($throttled) {
+                return $this->throttled();
+            }
+
             $keys->recordFailedAttempt();
 
             return $this->unknown();
@@ -39,12 +38,21 @@ class Access extends Component
 
         // A single indexed equality test on a hash: nothing here compares strings, so there is no
         // comparison whose timing could be measured to walk a key out one character at a time.
+        //
+        // Looked up even when the caller is throttled. The throttle exists to stop guessing, and a
+        // real key is not a guess — without this, a colleague mistyping links on the same office
+        // connection locks out the recipient holding the right one. Letting a correct key through
+        // costs nothing: 256 bits cannot be found by the guesses the throttle is refusing.
         $invite = Invite::find()
             ->keyHash($keys->hash($key))
             ->status(null)
             ->one();
 
         if (!$invite instanceof Invite) {
+            if ($throttled) {
+                return $this->throttled();
+            }
+
             $keys->recordFailedAttempt();
 
             return $this->unknown();
@@ -76,6 +84,14 @@ class Access extends Component
                 $invite,
             ),
         };
+    }
+
+    private function throttled(): AccessResult
+    {
+        return AccessResult::deny(
+            AccessResult::REASON_THROTTLED,
+            Craft::t('penny', 'Too many attempts. Try again later.'),
+        );
     }
 
     /**

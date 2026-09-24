@@ -61,6 +61,20 @@ function check(string $label, callable $test): void
     }
 }
 
+/**
+ * Drops the service's memo of which invite the signed-in user belongs to. It is cached for the
+ * request, and these checks change the signed-in user several times within one.
+ */
+function forgetCurrentInvite(Plugin $plugin): void
+{
+    $sessions = $plugin->sessions;
+    $reflection = new ReflectionClass($sessions);
+
+    foreach (['_currentInvite' => null, '_currentInviteLoaded' => false] as $property => $value) {
+        $reflection->getProperty($property)->setValue($sessions, $value);
+    }
+}
+
 function heading(string $text): void
 {
     echo "\n$text\n";
@@ -205,6 +219,20 @@ try {
 
     check('the hosted URL is a control panel URL', function() use ($keys) {
         $url = $keys->hostedUrlForKey('abc123');
+
+        return str_contains($url, Plugin::HOSTED_SEGMENT . '/abc123') ?: "got $url";
+    });
+
+    check('with no prefix, the emailed link is the hosted one rather than a 404', function() use ($keys, $plugin) {
+        $settings = $plugin->getSettings();
+        $original = $settings->inviteUriPrefix;
+        $settings->inviteUriPrefix = '';
+
+        try {
+            $url = $keys->urlForKey('abc123');
+        } finally {
+            $settings->inviteUriPrefix = $original;
+        }
 
         return str_contains($url, Plugin::HOSTED_SEGMENT . '/abc123') ?: "got $url";
     });
@@ -357,6 +385,53 @@ try {
 
         return (!$plugin->access->resolve($oldKey)->ok && $plugin->access->resolve($newKey)->ok)
             ?: 'the old key still works, or the new one does not';
+    });
+
+    check('re-issuing an expired invite gives the new link time to be used', function() use ($plugin, $makeInvite) {
+        $lapsed = $makeInvite();
+
+        craft\helpers\Db::update(justinholtweb\penny\db\Table::INVITES, [
+            'expiryDate' => craft\helpers\Db::prepareDateForDb((new DateTime())->modify('-1 day')),
+        ], ['id' => $lapsed->id], updateTimestamp: false);
+
+        $lapsed = $plugin->invites->getInviteById($lapsed->id);
+        $key = $plugin->invites->reissue($lapsed);
+
+        if ($key === null) {
+            return 'no new key';
+        }
+
+        $result = $plugin->access->resolve($key);
+
+        return $result->ok ?: 'the new link was dead on arrival: ' . $result->reason;
+    });
+
+    check('a throttled caller holding a real key still gets in, and a guess does not', function() use ($plugin, $makeInvite, $keys) {
+        $cache = Craft::$app->getCache();
+        $max = max(1, $plugin->getSettings()->maxAttemptsPerHour);
+        $real = $makeInvite();
+
+        for ($i = 0; $i < $max; $i++) {
+            $keys->recordFailedAttempt();
+        }
+
+        try {
+            $guess = $plugin->access->resolve($keys->mint());
+
+            for ($i = 0; $i < $max; $i++) {
+                $keys->recordFailedAttempt();
+            }
+
+            $right = $plugin->access->resolve($real->getPlainKey());
+        } finally {
+            $keys->clearAttempts();
+        }
+
+        if ($plugin->getSettings()->maxAttemptsPerHour > 0 && $guess->reason !== AccessResult::REASON_THROTTLED) {
+            return 'a guess was not throttled: ' . $guess->reason;
+        }
+
+        return $right->ok ?: 'the real key was refused: ' . $right->reason;
     });
 
     check('deleting an invite kills its link immediately', function() use ($plugin, $makeInvite) {
@@ -784,6 +859,141 @@ try {
             ?: 'got ' . var_export($css, true);
     });
 
+    // A real session user, signed in as far as the console can be: enough for currentInvite() to
+    // find the invite, which is all the guard and the hand-in look at.
+    $startSession = function(Invite $invite) use ($plugin): User {
+        $user = new User();
+        $user->username = 'penny-check-' . strtolower(StringHelper::randomString(8));
+        $user->email = $user->username . '@invalid.example.com';
+
+        if (!Craft::$app->getElements()->saveElement($user)) {
+            throw new RuntimeException('Could not create a session user: ' . json_encode($user->getErrors()));
+        }
+
+        craft\helpers\Db::update(justinholtweb\penny\db\Table::INVITES, ['sessionUserId' => $user->id], ['id' => $invite->id], updateTimestamp: false);
+        $invite->sessionUserId = $user->id;
+
+        Craft::$app->getUser()->setIdentity($user);
+        forgetCurrentInvite($plugin);
+
+        return $user;
+    };
+
+    $endSession = function(?User $user) use ($plugin): void {
+        Craft::$app->getUser()->setIdentity(null);
+        forgetCurrentInvite($plugin);
+
+        if ($user !== null && Craft::$app->getUsers()->getUserById($user->id) !== null) {
+            Craft::$app->getElements()->deleteElement($user, true);
+        }
+    };
+
+    check('a session cannot publish its own draft before handing in', function() use ($plugin, $makeInvite, $entry, $startSession, $endSession) {
+        $invite = $plugin->invites->getInviteById($makeInvite(['surface' => Surface::Cp->value])->id);
+        $draft = $plugin->editor->workingElement($invite, $invite->getTargets()[0]);
+        $user = $startSession($invite);
+
+        try {
+            $elements = Craft::$app->getElements();
+
+            if (!$plugin->sessions->refusesCanonicalSave($entry)) {
+                return 'the live entry was not refused';
+            }
+
+            if ($plugin->sessions->refusesCanonicalSave($draft)) {
+                return 'the draft itself was refused';
+            }
+
+            if ($elements->canSave($entry, $user)) {
+                return 'Craft would still offer Apply draft';
+            }
+
+            if ($elements->canDelete($entry, $user) || $elements->canDelete($draft, $user)) {
+                return 'the session may delete what it was invited to fill in';
+            }
+
+            $live = Entry::find()->id($entry->id)->status(null)->one();
+            $title = $live->title;
+            $live->title = 'published behind the reviewer';
+            $saved = $elements->saveElement($live);
+
+            return (!$saved && Entry::find()->id($entry->id)->status(null)->one()->title === $title)
+                ?: 'the live entry was saved from the session';
+        } finally {
+            $endSession($user);
+        }
+    });
+
+    check('handing in publishes the draft, spends the link and removes the account', function() use ($plugin, $makeInvite, $entry, $bodyHandle, $startSession, $endSession) {
+        $made = $makeInvite(['surface' => Surface::Cp->value]);
+        $key = $made->getPlainKey();
+        $invite = $plugin->invites->getInviteById($made->id);
+        $draft = $plugin->editor->workingElement($invite, $invite->getTargets()[0]);
+        $draft->setFieldValue($bodyHandle, 'handed in from the control panel');
+        Craft::$app->getElements()->saveElement($draft);
+
+        $user = $startSession($invite);
+
+        try {
+            $plugin->sessions->handIn($plugin->invites->getInviteById($invite->id));
+        } finally {
+            $endSession(null);
+        }
+
+        $live = Entry::find()->id($entry->id)->status(null)->one();
+        $reloaded = $plugin->invites->getInviteById($invite->id);
+
+        if ($live->getFieldValue($bodyHandle) !== 'handed in from the control panel') {
+            return 'the draft was not applied';
+        }
+
+        if ($reloaded->dateSubmitted === null || $plugin->access->resolve($key)->ok) {
+            return 'the link is still live';
+        }
+
+        $survivor = Craft::$app->getUsers()->getUserById($user->id);
+
+        if ($survivor !== null && !$survivor->suspended) {
+            $endSession($survivor);
+
+            return 'the session account can still sign in';
+        }
+
+        $endSession($survivor);
+
+        return $reloaded->sessionUserId === null ?: 'the invite still points at its account';
+    });
+
+    check('handing in a reviewed invite leaves the live entry alone', function() use ($plugin, $makeInvite, $entry, $bodyHandle, $startSession, $endSession) {
+        $invite = $plugin->invites->getInviteById($makeInvite(['surface' => Surface::Cp->value, 'requireReview' => true])->id);
+        $before = Entry::find()->id($entry->id)->status(null)->one()->getFieldValue($bodyHandle);
+        $draft = $plugin->editor->workingElement($invite, $invite->getTargets()[0]);
+        $draft->setFieldValue($bodyHandle, 'waiting for a reviewer');
+        Craft::$app->getElements()->saveElement($draft);
+
+        $user = $startSession($invite);
+
+        try {
+            $plugin->sessions->handIn($plugin->invites->getInviteById($invite->id));
+        } finally {
+            $endSession(Craft::$app->getUsers()->getUserById($user->id));
+        }
+
+        $reloaded = $plugin->invites->getInviteById($invite->id);
+        $after = Entry::find()->id($entry->id)->status(null)->one()->getFieldValue($bodyHandle);
+
+        return ($after === $before && $reloaded->getInviteStatus() === InviteStatus::AwaitingReview)
+            ?: 'status ' . $reloaded->getInviteStatus()->value . ', body ' . var_export($after, true);
+    });
+
+    check('the hand-in bar links every target', function() use ($plugin, $makeInvite, $entry) {
+        $invite = $plugin->invites->getInviteById($makeInvite(['surface' => Surface::Cp->value])->id);
+        $config = $plugin->sessions->handInBarConfig($invite);
+
+        return (count($config['targets']) === 1 && str_contains($config['targets'][0]['url'], (string)$entry->id))
+            ?: json_encode($config);
+    });
+
     // ------------------------------------------------------------------ audit
 
     heading('The audit trail');
@@ -826,6 +1036,18 @@ try {
             ->all();
 
         return !str_contains(json_encode($rows), $key) ?: 'the key was found in the audit trail';
+    });
+
+    check('a reminder is recorded so it is only ever sent once', function() use ($plugin, $makeInvite) {
+        $invite = $makeInvite();
+
+        if ($plugin->audit->hasEvent($invite, EventType::Reminded)) {
+            return 'a new invite already counts as reminded';
+        }
+
+        $plugin->audit->record($invite, EventType::Reminded, 'someone@example.com');
+
+        return $plugin->audit->hasEvent($invite, EventType::Reminded) ?: 'the reminder was not found';
     });
 
     // ------------------------------------------------------------------ editions

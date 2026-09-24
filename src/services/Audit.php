@@ -46,6 +46,19 @@ class Audit extends Component
         $record->save(false);
     }
 
+    /** Whether the invite's trail holds at least one event of this type. */
+    public function hasEvent(Invite $invite, EventType $type): bool
+    {
+        if (!$invite->id) {
+            return false;
+        }
+
+        return (new Query())
+            ->from([Table::EVENTS])
+            ->where(['inviteId' => $invite->id, 'type' => $type->value])
+            ->exists();
+    }
+
     /**
      * @return array<int, array{type: EventType, detail: string|null, ip: string|null, date: DateTime}>
      */

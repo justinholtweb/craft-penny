@@ -53,7 +53,7 @@ and when.
 | An entry that exists | The common case — "update this page" |
 | A new entry in a section | They fill in a blank one; it stays disabled until you say otherwise |
 | A global set | Opening hours, the address in the footer, the announcement bar |
-| A category, an asset, a user | Anything else with a field layout |
+| A category, a tag, an asset, a user | Anything else with a field layout |
 
 One target in Lite, as many as you like in Pro.
 
@@ -66,7 +66,7 @@ licence and your recipient never holds a login to your site.
 
 **The control panel** (Pro) — for a recipient who needs the whole editor. Penny creates a
 temporary, tightly-permissioned account, drops them on the edit screen, and deletes the account
-when they are done. It creates a real Craft user for the duration, which a Solo licence counts.
+when they hand the work in. It creates a real Craft user for the duration, which a Solo licence counts.
 
 ## Nothing is live until they say so
 
@@ -104,17 +104,17 @@ account.
 | Audit trail | ✓ | ✓ |
 | Targets per invite | 1 | unlimited |
 | New-entry targets | | ✓ |
-| Category, asset and user targets | | ✓ |
+| Category, tag, asset and user targets | | ✓ |
 | Temporary control panel sessions | | ✓ |
 | Email delivery, reminders, submission notices | | ✓ |
 | Hold for review | | ✓ |
-| Branding the Penny page | | ✓ |
-| Console commands and the Twig API | | ✓ |
+| Logo, accent colour and heading on the Penny page | ✓ | ✓ |
+| Console commands and the Twig API | ✓ | ✓ |
 
-## Templates
+## Email templates
 
-The Penny page and the emails are ordinary Twig, and your own site templates win. Put a template at
-any of these paths and Penny will use yours instead:
+The emails are ordinary Twig, and your own site templates win. Put a template at any of these paths
+and Penny will use yours instead:
 
 ```
 templates/penny/emails/invite.twig
@@ -147,7 +147,8 @@ php craft penny/invites/prune             # tidy stale sessions and trim the aud
 ```
 
 `remind` re-issues the link it sends, because only a hash of the original is stored and there is
-nothing to re-send. One live link per invite, always.
+nothing to re-send. One live link per invite, always. Each invite is reminded once, however often
+the command runs.
 
 ## Settings
 
@@ -171,7 +172,7 @@ hour.
 
 ```sh
 cd ~/Sites/plugin-testing
-ddev exec php /var/www/craft-penny/tests/integration/checks.php   # 64 checks
+ddev exec php /var/www/craft-penny/tests/integration/checks.php   # 72 checks
 ```
 
 ## Licence

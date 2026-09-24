@@ -6,6 +6,7 @@ use craft\console\Controller;
 use craft\helpers\Console;
 use DateTime;
 use justinholtweb\penny\elements\Invite;
+use justinholtweb\penny\enums\EventType;
 use justinholtweb\penny\enums\InviteStatus;
 use justinholtweb\penny\Plugin;
 use yii\console\ExitCode;
@@ -99,6 +100,12 @@ class InvitesController extends Controller
             // Somebody who has not opened it yet is the person a reminder is for. Somebody midway
             // through does not need chasing, and re-issuing would take the link out from under them.
             if ($invite->dateFirstOpened !== null) {
+                continue;
+            }
+
+            // One reminder per invite. Cron runs this every day, and without the check every run
+            // would mint another link and send another email for as long as the invite qualified.
+            if ($plugin->audit->hasEvent($invite, EventType::Reminded)) {
                 continue;
             }
 

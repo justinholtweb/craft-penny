@@ -11,6 +11,7 @@ enum EventType: string
 {
     case Created = 'created';
     case Sent = 'sent';
+    case Reminded = 'reminded';
     case Reissued = 'reissued';
     case Opened = 'opened';
     case Saved = 'saved';
@@ -25,6 +26,7 @@ enum EventType: string
         return match ($this) {
             self::Created => Craft::t('penny', 'Invite created'),
             self::Sent => Craft::t('penny', 'Link sent'),
+            self::Reminded => Craft::t('penny', 'Reminder sent'),
             self::Reissued => Craft::t('penny', 'Link re-issued'),
             self::Opened => Craft::t('penny', 'Link opened'),
             self::Saved => Craft::t('penny', 'Progress saved'),

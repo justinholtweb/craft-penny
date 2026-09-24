@@ -12,6 +12,7 @@ use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
+use craft\helpers\Json;
 use craft\services\Elements;
 use craft\services\Gc;
 use craft\services\UserPermissions;
@@ -136,6 +137,19 @@ class Plugin extends BasePlugin
         return $item;
     }
 
+    /**
+     * Disposes of every temporary control panel account before the tables that know about them go.
+     *
+     * The install migration drops the invites table, and after that nothing records which users
+     * Penny made — they would be left behind as ordinary accounts with no password and no owner.
+     */
+    protected function beforeUninstall(): void
+    {
+        foreach (Invite::find()->status(null)->sessionUserId(['not', null])->all() as $invite) {
+            $this->invites->endSession($invite);
+        }
+    }
+
     protected function createSettingsModel(): ?Model
     {
         return new Settings();
@@ -177,6 +191,9 @@ class Plugin extends BasePlugin
                 // `Application::handleRequest()` — before the controller is reached and therefore
                 // before `$allowAnonymous` is ever consulted. A first segment that is nobody's
                 // handle skips that gate and lets the controller answer for itself.
+                // Where a control panel recipient lands after handing in, already signed out. Before
+                // the key rule, which would otherwise read "done" as a (malformed) key.
+                self::HOSTED_SEGMENT . '/done' => 'penny/hosted/done',
                 self::HOSTED_SEGMENT . '/<key:[A-Za-z0-9_\-]+>' => 'penny/hosted/index',
             ];
         });
@@ -259,12 +276,27 @@ class Plugin extends BasePlugin
             Elements::EVENT_AUTHORIZE_DUPLICATE,
             Elements::EVENT_AUTHORIZE_CREATE_DRAFTS,
         ] as $eventName) {
-            Event::on(Elements::class, $eventName, function(AuthorizationCheckEvent $event) {
+            Event::on(Elements::class, $eventName, function(AuthorizationCheckEvent $event) use ($eventName) {
                 if ($this->sessions->currentInvite() === null || $event->element === null) {
                     return;
                 }
 
+                // An invite is for filling things in. Deleting or duplicating the element — or the
+                // draft holding the recipient's own work — is never part of it.
+                if (in_array($eventName, [Elements::EVENT_AUTHORIZE_DELETE, Elements::EVENT_AUTHORIZE_DUPLICATE], true)) {
+                    $event->authorized = false;
+
+                    return;
+                }
+
                 if (!$this->sessions->currentSessionAllows($event->element)) {
+                    $event->authorized = false;
+
+                    return;
+                }
+
+                // Refusing the live copy is also what takes *Apply draft* off the screen.
+                if ($eventName === Elements::EVENT_AUTHORIZE_SAVE && $this->sessions->refusesCanonicalSave($event->element)) {
                     $event->authorized = false;
                 }
             });
@@ -288,6 +320,17 @@ class Plugin extends BasePlugin
             if (!$this->sessions->currentSessionAllows($element)) {
                 Craft::warning(
                     sprintf('Blocked a save of %s #%s from invite %d, which is not in its scope.', $element::class, $element->id ?? 'new', $invite->id),
+                    self::LOG_CATEGORY,
+                );
+
+                $event->isValid = false;
+
+                return;
+            }
+
+            if ($this->sessions->refusesCanonicalSave($element)) {
+                Craft::warning(
+                    sprintf('Blocked publishing %s #%s from invite %d before it was handed in.', $element::class, $element->id ?? 'new', $invite->id),
                     self::LOG_CATEGORY,
                 );
 
@@ -320,6 +363,13 @@ class Plugin extends BasePlugin
             if ($css !== null) {
                 $view->registerCss($css);
             }
+
+            // Without this the recipient has no way to say they are finished, and the account —
+            // and the live link — would sit there until somebody remembered to revoke it.
+            $view->registerJs(sprintf(
+                'window.PennyHandIn && window.PennyHandIn(%s);',
+                Json::encode($this->sessions->handInBarConfig($invite)),
+            ), View::POS_END);
         });
     }
 }

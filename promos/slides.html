@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<!-- handmade: hand-tuned deck -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Penny — Plugin Store promos</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --charcoal: #0f0f1a;
+    --charcoal-light: #1a1a2e;
+    --charcoal-lighter: #252540;
+    --accent: #ED8228;
+    --accent-light: #F4AE85;
+    --gold: #ffd166;
+    --off-white: #f0f0f5;
+  }
+
+  html { background: #000; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--off-white);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- slide shell ---------------------------------------------------- */
+  .slide {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 85% 15%, rgba(237, 130, 40, 0.28) 0%, transparent 40%),
+      radial-gradient(ellipse at 65% 5%,  rgba(244, 174, 133, 0.12) 0%, transparent 35%),
+      radial-gradient(ellipse at 15% 85%, rgba(255, 209, 102, 0.07) 0%, transparent 40%),
+      radial-gradient(ellipse at 35% 95%, rgba(154, 80, 37, 0.16) 0%, transparent 35%),
+      linear-gradient(135deg, #0f0f1a 0%, #1a130f 30%, #21170f 60%, #0f0f1a 100%);
+  }
+
+  /* Oversized watermark: the mark with the tile stripped, because a rounded square at this
+     size reads as a grey box across the slide rather than as the icon. Anchored bottom-right and
+     running off the right and bottom edges so only part of the coin carries
+     behind the type. */
+  .slide::after {
+    content: '';
+    position: absolute;
+    top: 22%;
+    right: -22%;
+    width: 1400px;
+    height: 1400px;
+    background: url('assets/watermark.svg') no-repeat center / contain;
+    opacity: 0.03;
+    pointer-events: none;
+  }
+
+  /* The cover has the icon itself; a watermark behind it reads as its shadow. */
+  .cover::after { display: none; }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-light), var(--gold), var(--accent));
+    z-index: 5;
+  }
+
+  .inner {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    padding: 118px 130px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ---- type ------------------------------------------------------------ */
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(240, 240, 245, 0.62);
+    margin-bottom: 34px;
+  }
+  .eyebrow .rule {
+    width: 58px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--accent-light);
+  }
+
+  h1, h2 {
+    font-family: 'Jersey 20', sans-serif;
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: 0.005em;
+  }
+
+  .gradient-text {
+    background: linear-gradient(100deg, #ED8228 0%, #F4AE85 38%, #ffd166 68%, #ED8228 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lede {
+    font-size: 34px;
+    line-height: 1.5;
+    color: rgba(240, 240, 245, 0.72);
+  }
+
+  .mono {
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  /* ---- cover ----------------------------------------------------------- */
+  .cover .inner { gap: 90px; }
+  .cover .copy { flex: 1 1 auto; }
+  .cover h1 { font-size: 168px; margin-bottom: 26px; }
+  .cover .tagline {
+    font-size: 46px;
+    line-height: 1.25;
+    color: rgba(240, 240, 245, 0.78);
+    margin-bottom: 46px;
+    max-width: 900px;
+  }
+  .cover .badges { display: flex; gap: 18px; align-items: center; }
+  .badge {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 14px 26px;
+    border-radius: 999px;
+    border: 2px solid rgba(244, 174, 133, 0.45);
+    color: rgba(240, 240, 245, 0.85);
+  }
+  .badge.free { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .cover .mark { flex: 0 0 auto; }
+  .cover .mark img { width: 420px; height: 420px; display: block; }
+
+  /* ---- feature slides -------------------------------------------------- */
+  .feature .inner { padding-right: 0; }
+  .feature .copy { width: 760px; flex: 0 0 auto; }
+  .feature h2 { font-size: 96px; margin-bottom: 30px; }
+  .feature .lede { max-width: 700px; }
+
+  .points { list-style: none; margin-top: 40px; display: flex; flex-direction: column; gap: 20px; }
+  .points li {
+    display: flex;
+    gap: 16px;
+    font-size: 25px;
+    line-height: 1.4;
+    color: rgba(240, 240, 245, 0.6);
+  }
+  .points li svg { flex: 0 0 auto; margin-top: 4px; }
+
+  /* ---- screenshot slabs ------------------------------------------------ */
+  .shot {
+    position: absolute;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .shot .chrome {
+    height: 40px;
+    background: #2a2a3e;
+    background-image:
+      radial-gradient(circle at 24px 20px, #ff5f57 6px, transparent 6.5px),
+      radial-gradient(circle at 48px 20px, #ffbd2e 6px, transparent 6.5px),
+      radial-gradient(circle at 72px 20px, #28ca42 6px, transparent 6.5px);
+  }
+  .shot .viewport { overflow: hidden; background: #e4edf6; position: relative; }
+  .shot img { display: block; width: 100%; position: absolute; left: 0; }
+
+  .caption {
+    font-size: 22px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(240, 240, 245, 0.5);
+    margin-bottom: 14px;
+  }
+  .caption b { color: var(--accent-light); font-weight: 600; }
+
+  /* ---- before / after -------------------------------------------------- */
+  .compare .inner { flex-direction: column; align-items: flex-start; padding-bottom: 60px; }
+  .compare h2 { font-size: 88px; margin-bottom: 18px; }
+  .compare .lede { font-size: 30px; max-width: 1280px; margin-bottom: 44px; }
+  .compare .pair { display: flex; gap: 56px; width: 100%; }
+  .compare .pane { flex: 1 1 0; min-width: 0; }
+  .compare .shot { position: relative; }
+
+  .arrow {
+    position: absolute;
+    left: 50%;
+    top: 640px;
+    transform: translateX(-50%);
+    z-index: 4;
+    width: 92px;
+    height: 92px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 12px 40px rgba(237, 130, 40, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---- closing panel --------------------------------------------------- */
+  .closing .inner { flex-direction: column; align-items: flex-start; justify-content: center; }
+  .closing h2 { font-size: 104px; margin-bottom: 34px; }
+  .closing .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 26px 54px;
+    margin-top: 20px;
+    width: 1420px;
+  }
+  .closing .cell {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(37, 37, 64, 0.42);
+    padding: 28px 32px;
+  }
+  .closing .cell b { display: block; font-size: 28px; margin-bottom: 8px; color: var(--off-white); }
+  .closing .cell span { font-size: 23px; line-height: 1.45; color: rgba(240, 240, 245, 0.58); }
+
+  /* ---- layout diagram slide -------------------------------------------- */
+  .diagram {
+    position: absolute;
+    right: 130px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 800px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(15, 15, 26, 0.72);
+    padding: 44px 48px;
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 26px;
+    line-height: 1.65;
+    color: rgba(240, 240, 245, 0.72);
+    white-space: pre;
+  }
+  .diagram .tab { color: var(--off-white); font-weight: 600; }
+  .diagram .marker { color: var(--accent-light); }
+  .diagram .dim { color: rgba(240, 240, 245, 0.38); }
+  .diagram .gold { color: var(--gold); }
+
+  /* ---- footer lockup --------------------------------------------------- */
+  .footer {
+    position: absolute;
+    left: 130px;
+    bottom: 54px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 22px;
+    color: rgba(240, 240, 245, 0.42);
+  }
+  .footer img { width: 40px; height: 40px; border-radius: 9px; }
+  .footer b { color: rgba(240, 240, 245, 0.72); font-weight: 600; }
+
+  /* Only render the requested slide when screenshotting */
+  body.single .slide { display: none; }
+  body.single .slide.active { display: block; }
+
+  /* ---- control-panel screenshot cards -------------------------------
+     Self-contained: these cards must drop into any deck in the family, and the decks
+     do not share a class system. Only --accent and --off-white are relied on, both of
+     which every deck defines, and both have fallbacks. */
+  .slide.cpcard { display: block; }
+  .cpcard .cpc-inner {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    padding: 112px 120px;
+    display: flex;
+    align-items: center;
+    gap: 70px;
+  }
+  .cpcard .cpc-copy { width: 660px; flex: 0 0 660px; }
+
+  .cpcard .cpc-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 34px;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent-light, #7aa2c8);
+  }
+  .cpcard .cpc-eyebrow i {
+    display: block;
+    width: 62px;
+    height: 3px;
+    background: var(--accent-light, #7aa2c8);
+    border-radius: 2px;
+  }
+
+  .cpcard .cpc-h2 {
+    font-family: 'Jersey 20', 'Inter', sans-serif;
+    font-size: 88px;
+    line-height: 0.96;
+    font-weight: 400;
+    letter-spacing: 0.005em;
+    margin: 0 0 28px;
+    color: var(--off-white, #f0f0f5);
+  }
+
+  .cpcard .cpc-lede {
+    font-size: 33px;
+    line-height: 1.42;
+    color: rgba(240, 240, 245, 0.66);
+    margin: 0;
+  }
+
+  .cpcard .cpc-points { list-style: none; margin: 40px 0 0; padding: 0; }
+  .cpcard .cpc-points li {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    font-size: 26px;
+    line-height: 1.5;
+    color: rgba(240, 240, 245, 0.72);
+    margin-bottom: 18px;
+  }
+  .cpcard .cpc-points li::before {
+    content: '';
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    margin-top: 14px;
+    border-radius: 50%;
+    background: var(--accent, #7aa2c8);
+  }
+
+  .cpcard .cpc-panel { flex: 1 1 auto; min-width: 0; }
+
+  .cpcard .cpc-frame {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #e4edf6;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55), 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+  .cpcard .cpc-chrome {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 18px;
+    background: linear-gradient(180deg, #2a2a3d 0%, #21212f 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+  }
+  .cpcard .cpc-chrome b { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.16); }
+  .cpcard .cpc-chrome b:nth-child(1) { background: #ff5f57; }
+  .cpcard .cpc-chrome b:nth-child(2) { background: #febc2e; }
+  .cpcard .cpc-chrome b:nth-child(3) { background: #28c840; }
+  .cpcard .cpc-chrome em {
+    margin-left: 12px;
+    font-style: normal;
+    font-size: 19px;
+    letter-spacing: 0.02em;
+    color: rgba(240, 240, 245, 0.45);
+  }
+  .cpcard .cpc-frame img { display: block; width: 100%; height: auto; }
+
+  /* A tall capture is anchored to its top — the interesting rows are always first.
+     The fade makes the cut read as "there is more" rather than as a broken edge. */
+  .cpcard .cpc-frame.cpc-clip { max-height: 620px; position: relative; }
+  .cpcard .cpc-frame.cpc-clip img { object-fit: cover; object-position: top center; max-height: 580px; }
+  .cpcard .cpc-frame.cpc-clip::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 130px;
+    background: linear-gradient(180deg, rgba(228,237,246,0) 0%, rgba(228,237,246,0.92) 78%, #e4edf6 100%);
+  }
+
+  .cpcard .cpc-frame.cpc-clip.tall { max-height: 800px; }
+  .cpcard .cpc-frame.cpc-clip.tall img { max-height: 760px; }
+
+  .cpcard .cpc-caption {
+    display: block;
+    margin-top: 20px;
+    font-size: 22px;
+    line-height: 1.45;
+    color: rgba(240, 240, 245, 0.52);
+  }
+  .cpcard .cpc-caption b { color: rgba(240, 240, 245, 0.80); font-weight: 600; }
+
+
+  /* ---- panels shared by slides 2, 3 and 5 ------------------------------ */
+  .panel {
+    position: absolute; right: 110px; top: 50%; transform: translateY(-50%);
+    border-radius: 14px; border: 1px solid rgba(255,255,255,0.09); background: rgba(22, 16, 12, 0.82);
+    padding: 40px 46px;
+  }
+  .mono-block {
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 22px; line-height: 1.95; color: rgba(240,240,245,0.62); white-space: pre;
+  }
+  .hd { color: rgba(240,240,245,0.4); }
+  .ok { color: #7ee2a8; }
+  .bad { color: #ff6b6b; }
+  .ask { color: var(--gold); }
+  .done { color: var(--accent-light); font-weight: 600; }
+  .kw { color: #8fb8ff; }
+
+  /* ---- slide 2: a link's life ------------------------------------------ */
+  .life { width: 960px; display: flex; flex-direction: column; gap: 18px; }
+  .step { display: grid; grid-template-columns: 170px 1fr; gap: 26px; align-items: center;
+          border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 22px 28px; }
+  .step .when { font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(240,240,245,0.45); font-weight: 600; }
+  .step .what { font-size: 26px; color: rgba(240,240,245,0.82); line-height: 1.35; }
+  .step .what small { display: block; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 19px; color: rgba(240,240,245,0.45); margin-top: 6px; }
+  .step.hit { border-color: rgba(255,107,107,0.45); background: rgba(255,107,107,0.07); }
+  .step.hit .when { color: #ff8b8b; }
+  .step.gone .what { color: #ff8b8b; }
+
+  /* ---- slide 3: two tabs ------------------------------------------------ */
+  .race { width: 960px; }
+  .race .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 28px; }
+  .race .tab { border-radius: 12px; padding: 24px 28px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+  .race .tab b { display: block; font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(240,240,245,0.45); margin-bottom: 10px; }
+  .race .tab span { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 24px; }
+  .race .tab.win { border-color: rgba(94,224,160,0.45); }
+  .race .tab.lose { border-color: rgba(255,107,107,0.4); }
+
+  /* ---- cropped screenshots -------------------------------------------
+     One real capture can serve two slides: the frame is a window onto a region of it,
+     sized and offset inline, rather than a second, hand-cropped copy of the same file. */
+  .crop { position: relative; overflow: hidden; background: #e4edf6; }
+  .crop img { position: absolute; max-width: none; height: auto; }
+  .crop.hosted { background: #f4f4f4; }
+
+  /* ---- slide 6: keys + audit trail ------------------------------------- */
+  .keys { width: 1000px; }
+  .keygrid { display: grid; grid-template-columns: 100px 420px 1fr; row-gap: 8px;
+             font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 21px; line-height: 1.8; color: rgba(240,240,245,0.62); }
+  .keys .trail-label { font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(240,240,245,0.45); font-weight: 600; margin: 30px 0 14px; }
+  .keys .crop { border-radius: 10px; }
+
+  /* ---- slide 5: the scope on the way in ------------------------------- */
+  .field-row { display: grid; grid-template-columns: 260px 1fr 150px; gap: 20px; align-items: center;
+               padding: 14px 22px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+               font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 21px; margin-top: 12px; }
+  .field-row .v { color: rgba(240,240,245,0.55); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .field-row .r { text-align: right; font-weight: 600; }
+  .field-row.drop { border-color: rgba(255,107,107,0.35); background: rgba(255,107,107,0.06); }
+  .pro { font-style: normal; font-size: 16px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+         color: var(--accent-light); border: 1px solid rgba(244,174,133,0.45); border-radius: 999px; padding: 3px 10px; margin-left: 10px; vertical-align: 4px; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Cover ============================================================ -->
+<section class="slide cover" data-n="1">
+  <div class="inner">
+    <div class="copy">
+      <div class="eyebrow"><span class="rule"></span> Craft CMS 5</div>
+      <h1 class="gradient-text">Penny</h1>
+      <p class="tagline" style="max-width: 1100px;">One-time content invites:<br>a single-use link to exactly the fields you pick.</p>
+      <div class="badges">
+        <span class="badge free">Lite free</span>
+        <span class="badge">Pro $79</span>
+        <span class="badge">$59/yr renewal</span>
+      </div>
+    </div>
+    <div class="mark"><img src="assets/icon.svg" alt=""></div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
+</section>
+
+<!-- 2 · A link's life ==================================================== -->
+<section class="slide feature" data-n="2">
+  <div class="inner">
+    <div class="copy" style="width: 640px;">
+      <div class="eyebrow"><span class="rule"></span> No account needed</div>
+      <h2>A link,<br>not a login</h2>
+      <p class="lede" style="max-width: 620px;">Somebody outside the team gets a single-use link to the fields you chose. No user, no group, no permissions to tidy up afterwards.</p>
+      <ul class="points">
+        <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F4AE85" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="t">Works on a Solo licence</span></li>
+        <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F4AE85" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> <span class="t">Dead once it's sent in, revoked or expired</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="panel life">
+    <div class="step"><div class="when">Monday</div><div class="what">“Bio from Sam” is created: role, bio and direct line ticked. The link is emailed.<small>/penny/pY9v-rsJ8jWW…wWWEf-Q</small></div></div>
+    <div class="step"><div class="when">Tuesday</div><div class="what">Sam opens it and saves halfway. It's a draft, so the live page hasn't changed.</div></div>
+    <div class="step"><div class="when">Wednesday</div><div class="what">Sam sends it in. Held for review, it goes live when you click <i>Approve and publish</i>.</div></div>
+    <div class="step hit gone"><div class="when">Thursday</div><div class="what">Monday's link is opened again: “This link has already been used.”</div></div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
+</section>
+
+<!-- 3 · The invite screen (real CP screenshot) =========================== -->
+<section class="slide cpcard" data-n="3">
+  <div class="cpc-inner">
+    <div class="cpc-copy" style="width: 620px; flex-basis: 620px;">
+      <div class="cpc-eyebrow"><i></i> In the control panel</div>
+      <h2 class="cpc-h2">Tick the fields.<br>That's the scope.</h2>
+      <p class="cpc-lede">Pick what they work on, tick what they may touch, and Penny gives you the link. Once.</p>
+      <ul class="cpc-points">
+        <li>Entries and globals; new entries, categories, assets and users in Pro</li>
+        <li>New fields are included when you choose the whole layout</li>
+      </ul>
+    </div>
+    <div class="cpc-panel">
+      <figure class="cpc-frame">
+        <div class="cpc-chrome"><b></b><b></b><b></b><em>Penny → Invites → Bio from Sam</em></div>
+        <div class="crop" style="width: 940px; height: 782px;"><img src="shots/penny-invite-edit.png" alt="" style="width: 1346px; left: 0; top: -380px;"></div>
+      </figure>
+    </div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
+</section>
+
+<!-- 4 · The Penny page (real screenshot) ================================= -->
+<section class="slide cpcard" data-n="4">
+  <div class="cpc-inner">
+    <div class="cpc-copy">
+      <div class="cpc-eyebrow"><i></i> What they see</div>
+      <h2 class="cpc-h2">Your note,<br>their fields,<br>one button</h2>
+      <p class="cpc-lede">A standalone page rendering Craft's real field inputs, so Matrix, CKEditor, assets and relations all just work.</p>
+      <ul class="cpc-points">
+        <li>The entry's internal notes field is not on the page</li>
+        <li>Your logo and accent colour in Pro</li>
+      </ul>
+    </div>
+    <div class="cpc-panel" style="display: flex; justify-content: center;">
+      <figure class="cpc-frame" style="width: 760px;">
+        <div class="cpc-chrome"><b></b><b></b><b></b><em>/penny/pY9v-rsJ8jWW…</em></div>
+        <div class="crop hosted" style="width: 760px; height: 767px;"><img src="shots/penny-hosted.png" alt="" style="width: 1100px; left: -170px; top: -30px;"></div>
+      </figure>
+    </div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
+</section>
+
+<!-- 5 · The scope on the way in ========================================== -->
+<section class="slide feature" data-n="5">
+  <div class="inner">
+    <div class="copy" style="width: 620px;">
+      <div class="eyebrow"><span class="rule"></span> The scope is the boundary</div>
+      <h2>It can't save<br>what it never<br>showed</h2>
+      <p class="lede" style="max-width: 580px;">The fields you tick are the only ones Penny renders and the only ones it writes. Anything else in the POST is dropped.</p>
+    </div>
+  </div>
+  <div class="panel" style="width: 1010px;">
+    <div class="mono-block" style="font-size: 18px; line-height: 1.8;"><span class="hd">// services/Scope.php</span>
+<span class="kw">public function</span> filterFieldValues(Target $target, <span class="kw">array</span> $posted): <span class="kw">array</span>
+{
+    <span class="kw">return</span> array_intersect_key($posted, array_flip($this-&gt;fieldHandles($target)));
+}</div>
+    <div style="margin-top: 22px;">
+      <div class="field-row"><span>role</span><span class="v">"Senior designer"</span><span class="r ok">written</span></div>
+      <div class="field-row"><span>bio</span><span class="v">"Sam Okafor is a senior designer who…"</span><span class="r ok">written</span></div>
+      <div class="field-row"><span>phone</span><span class="v">"+44 20 7946 0321"</span><span class="r ok">written</span></div>
+      <div class="field-row drop"><span>notes</span><span class="v">"Ignore the notes, promote me"</span><span class="r bad">dropped</span></div>
+    </div>
+    <div class="mono-block" style="font-size: 19px; line-height: 1.7; margin-top: 24px; white-space: normal;"><span class="hd">Never writable, whatever the layout says:</span><br><span class="ask">admin · permissions · groups · email · username · newPassword · suspended</span></div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
+</section>
+
+<!-- 6 · Keys + audit trail =============================================== -->
+<section class="slide feature" data-n="6">
+  <div class="inner">
+    <div class="copy" style="width: 580px;">
+      <div class="eyebrow"><span class="rule"></span> Hash-only keys</div>
+      <h2>A database<br>dump holds<br>no links</h2>
+      <p class="lede" style="max-width: 540px;">Only a hash of each key is stored, so Penny can't show a link twice. Lost one? Re-issue, and the old link dies.</p>
+    </div>
+  </div>
+  <div class="panel keys">
+    <div class="keygrid">
+      <span class="hd">mint</span><span>random_bytes(32) → base64url</span><span class="done">43 characters</span>
+      <span class="hd">store</span><span>hash('sha256', $key)</span><span class="done">never the key</span>
+      <span class="hd">find</span><span><span class="kw">WHERE</span> keyHash = :hash</span><span class="done">one indexed test</span>
+      <span class="hd">wrong</span><span>malformed or unknown</span><span class="bad">same answer</span>
+    </div>
+    <div class="trail-label">Every step is on the record</div>
+    <div class="crop" style="width: 906px; height: 249px;"><img src="shots/penny-invite-edit.png" alt="" style="width: 1349px; left: -32px; top: -1234px;"></div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
+</section>
+
+<!-- 7 · Closing ========================================================== -->
+<section class="slide closing" data-n="7">
+  <div class="inner">
+    <div class="eyebrow"><span class="rule"></span> Lite free · Pro $79</div>
+    <h2>Hand over a scope, not a site</h2>
+    <div class="grid">
+      <div class="cell"><b>Drafts until they submit</b><span>Entries and categories are edited as a draft. A half-finished session never reaches your site.</span></div>
+      <div class="cell"><b>Hold for review <em class="pro">Pro</em></b><span>Submission lands as a draft for you to approve, instead of going live.</span></div>
+      <div class="cell"><b>The whole editor, briefly <em class="pro">Pro</em></b><span>A temporary, tightly-permissioned control panel account, deleted when they are done.</span></div>
+      <div class="cell"><b>Emails and reminders <em class="pro">Pro</em></b><span>Send the link, chase it before the deadline, and hear when it comes back.</span></div>
+    </div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
+</section>
+
+<script>
+  var n = new URLSearchParams(location.search).get('s');
+  if (n) {
+    document.body.classList.add('single');
+    var el = document.querySelector('.slide[data-n="' + n + '"]');
+    if (el) el.classList.add('active');
+  }
+</script>
+</body>
+</html>

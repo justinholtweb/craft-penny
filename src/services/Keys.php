@@ -49,10 +49,19 @@ class Keys extends Component
         return (bool)preg_match('/^[A-Za-z0-9_\-]{20,128}$/', $key);
     }
 
-    /** The pretty, site-facing link — the one that goes in the email. */
+    /**
+     * The pretty, site-facing link — the one that goes in the email.
+     *
+     * With the prefix emptied no site route is registered at all, so a site link would 404. The
+     * hosted link works without one, so that is the link.
+     */
     public function urlForKey(string $key): string
     {
-        $prefix = trim(Plugin::getInstance()->getSettings()->inviteUriPrefix, '/') ?: 'penny';
+        $prefix = trim(Plugin::getInstance()->getSettings()->inviteUriPrefix, '/');
+
+        if ($prefix === '') {
+            return $this->hostedUrlForKey($key);
+        }
 
         return UrlHelper::siteUrl("$prefix/$key");
     }
@@ -74,6 +83,17 @@ class Keys extends Component
         }
 
         return UrlHelper::cpUrl(Plugin::HOSTED_SEGMENT . "/$key");
+    }
+
+    /** Where a control panel recipient is sent once they have handed in. */
+    public function hostedDoneUrl(): string
+    {
+        // The same interception risk as above, and the same way round it.
+        if (Craft::$app->getPlugins()->getPlugin(Plugin::HOSTED_SEGMENT) !== null) {
+            return UrlHelper::actionUrl('penny/hosted/done');
+        }
+
+        return UrlHelper::cpUrl(Plugin::HOSTED_SEGMENT . '/done');
     }
 
     // ------------------------------------------------------------------ rate limiting

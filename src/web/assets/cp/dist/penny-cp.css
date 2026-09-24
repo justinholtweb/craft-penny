@@ -85,3 +85,42 @@ body.penny-invited-session #page-title::after {
     font-weight: 400;
     color: var(--medium-text-color, #606d7b);
 }
+
+/* The hand-in bar: which targets there are, and the button that finishes the session. */
+.penny-hand-in {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 12px 24px;
+    background: var(--white, #fff);
+    border-top: 1px solid var(--hairline-color, rgba(51, 64, 77, 0.1));
+    box-shadow: 0 -4px 12px rgba(31, 41, 51, 0.08);
+}
+
+body.penny-has-hand-in {
+    padding-bottom: 72px;
+}
+
+.penny-hand-in-targets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+}
+
+.penny-hand-in-targets a[aria-current="page"] {
+    font-weight: 600;
+    color: var(--text-color, #3f4d5a);
+}
+
+.penny-hand-in-note {
+    flex: 1 1 240px;
+    margin: 0;
+    color: var(--medium-text-color, #606d7b);
+    font-size: 0.8125rem;
+}

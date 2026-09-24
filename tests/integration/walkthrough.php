@@ -4,6 +4,7 @@
  * over HTTP the way a recipient would.
  *
  *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php setup
+ *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php setup cp   # Pro control panel surface
  *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php check
  *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php teardown
  */
@@ -178,6 +179,7 @@ $invite = $plugin->invites->create([
     'authorId' => $admin?->id,
     'recipientName' => 'Sam',
     'message' => "Could you update the title and the body? Thanks.",
+    'surface' => ($argv[2] ?? null) === 'cp' ? 'cp' : 'hosted',
 ]);
 
 $invite->setTargets([new Target([

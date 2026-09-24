@@ -72,7 +72,7 @@ class Notifications extends Component
         );
 
         if ($sent) {
-            Plugin::getInstance()->audit->record($invite, EventType::Sent, Craft::t('penny', 'Reminder'));
+            Plugin::getInstance()->audit->record($invite, EventType::Reminded, $invite->recipientEmail);
         }
 
         return $sent;
