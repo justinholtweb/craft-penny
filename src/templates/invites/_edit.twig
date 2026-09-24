@@ -116,12 +116,13 @@
         {% endif %}
 
         {{ forms.selectField({
-            label: "Where they edit"|t('penny'),
+            label: "What the link does"|t('penny'),
             id: 'surface',
             name: 'surface',
             options: [
-                { value: 'hosted', label: "Penny page"|t('penny') },
-                { value: 'cp', label: "Control panel"|t('penny') ~ (isPro ? '' : ' (Pro)'), disabled: not isPro },
+                { value: 'hosted', label: "Edit on the Penny page"|t('penny') },
+                { value: 'cp', label: "Edit in the control panel"|t('penny') ~ (isPro ? '' : ' (Pro)'), disabled: not isPro },
+                { value: 'view', label: "View once"|t('penny') ~ (isPro ? '' : ' (Pro)'), disabled: not isPro },
             ],
             value: invite.surface,
             errors: invite.getErrors('surface'),
@@ -142,7 +143,7 @@
             name: 'expiryDate',
             value: invite.expiryDate,
             errors: invite.getErrors('expiryDate'),
-            instructions: "Leave empty for no deadline. The link also dies the moment it is submitted."|t('penny'),
+            instructions: "Leave empty for no deadline. The link also dies the moment it is submitted, or, for a view link, opened."|t('penny'),
         }) }}
 
         {{ forms.lightswitchField({
@@ -207,7 +208,7 @@
             {% endif %}
             {% if invite.dateSubmitted %}
                 <div class="data">
-                    <h5 class="heading">{{ "Submitted"|t('penny') }}</h5>
+                    <h5 class="heading">{{ (invite.getSurface().value == 'view' ? "Viewed" : "Submitted")|t('penny') }}</h5>
                     <div class="value">{{ invite.dateSubmitted|datetime('short') }}</div>
                 </div>
             {% endif %}
@@ -222,17 +223,22 @@
                 </button>
             {% endif %}
 
-            <button type="button" class="btn penny-action" data-action="penny/invites/reissue">
-                {{ "Re-issue the link"|t('penny') }}
-            </button>
-
-            {% if isPro and invite.recipientEmail %}
-                <button type="button" class="btn penny-action" data-action="penny/invites/send">
-                    {{ "Email a fresh link"|t('penny') }}
+            {# Only while there is something a new link could still be used for. #}
+            {% if not invite.dateSubmitted %}
+                <button type="button" class="btn penny-action" data-action="penny/invites/reissue">
+                    {{ "Re-issue the link"|t('penny') }}
                 </button>
+
+                {% if isPro and invite.recipientEmail %}
+                    <button type="button" class="btn penny-action" data-action="penny/invites/send">
+                        {{ "Email a fresh link"|t('penny') }}
+                    </button>
+                {% endif %}
             {% endif %}
 
-            {% if canDelete and status.isLive() %}
+            {# A viewed link is spent, but the browser that opened it can still reload the page until
+               its window closes, and revoking is how you take that away early. #}
+            {% if canDelete and (status.isLive() or status.value == 'viewed') %}
                 <button type="button" class="btn penny-action" data-action="penny/invites/revoke"
                         data-confirm="{{ "Turn this link off? It cannot be turned back on — you would issue a new one."|t('penny') }}">
                     {{ "Revoke"|t('penny') }}

@@ -219,10 +219,10 @@
   .closing h2 { font-size: 104px; margin-bottom: 34px; }
   .closing .grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 26px 54px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px 32px;
     margin-top: 20px;
-    width: 1420px;
+    width: 1660px;
   }
   .closing .cell {
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -445,12 +445,31 @@
   .crop img { position: absolute; max-width: none; height: auto; }
   .crop.hosted { background: #f4f4f4; }
 
-  /* ---- slide 6: keys + audit trail ------------------------------------- */
-  .keys { width: 1000px; }
-  .keygrid { display: grid; grid-template-columns: 100px 420px 1fr; row-gap: 8px;
-             font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 21px; line-height: 1.8; color: rgba(240,240,245,0.62); }
-  .keys .trail-label { font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(240,240,245,0.45); font-weight: 600; margin: 30px 0 14px; }
-  .keys .crop { border-radius: 10px; }
+  /* ---- slide 6: view links ------------------------------------------ */
+  .vl .vl-inner { position: relative; z-index: 2; height: 100%; padding: 80px 130px 0; display: flex; flex-direction: column; gap: 34px; }
+  .vl .vl-top { display: flex; align-items: center; justify-content: space-between; gap: 60px; }
+  .vl .vl-copy { flex: 0 0 720px; }
+  .vl .eyebrow { margin-bottom: 26px; }
+  .vl .eyebrow .pro { font-size: 17px; margin-left: 4px; vertical-align: 0; }
+  .vl h2 { font-size: 86px; margin-bottom: 22px; }
+  .vl .lede { font-size: 29px; line-height: 1.45; max-width: 700px; }
+  .vl .vl-hud { width: 880px; flex: 0 0 880px; }
+  .vl .vl-hud figcaption { margin-top: 16px; font-size: 21px; color: rgba(240,240,245,0.52); }
+  .vl .vl-hud figcaption b { color: rgba(240,240,245,0.82); font-weight: 600; }
+  .vl .cpc-frame { border-radius: 12px; overflow: hidden; background: #e4edf6; border: 1px solid rgba(255,255,255,0.10); box-shadow: 0 30px 70px rgba(0,0,0,0.5), 0 6px 18px rgba(0,0,0,0.3); }
+  .vl .cpc-chrome { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: linear-gradient(180deg, #2a2a3d 0%, #21212f 100%); border-bottom: 1px solid rgba(0,0,0,0.35); }
+  .vl .cpc-chrome b { width: 11px; height: 11px; border-radius: 50%; }
+  .vl .cpc-chrome b:nth-child(1) { background: #ff5f57; }
+  .vl .cpc-chrome b:nth-child(2) { background: #febc2e; }
+  .vl .cpc-chrome b:nth-child(3) { background: #28c840; }
+  .vl .cpc-chrome em { margin-left: 10px; font-style: normal; font-size: 17px; color: rgba(240,240,245,0.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vl .vl-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+  .vl .vl-head { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .vl .vl-head b { display: block; font-size: 24px; font-weight: 600; color: var(--off-white); }
+  .vl .vl-head span:not(.vl-n) { display: block; font-size: 19px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 3px; }
+  .vl .vl-n { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 700; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+  .vl .vl-n.bad-n { background: #d9534f; }
+  .vl .vl-step p { margin-top: 12px; font-size: 20px; line-height: 1.4; color: rgba(240,240,245,0.55); }
 
   /* ---- slide 5: the scope on the way in ------------------------------- */
   .field-row { display: grid; grid-template-columns: 260px 1fr 150px; gap: 20px; align-items: center;
@@ -575,24 +594,49 @@
   <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
 </section>
 
-<!-- 6 · Keys + audit trail =============================================== -->
-<section class="slide feature" data-n="6">
-  <div class="inner">
-    <div class="copy" style="width: 580px;">
-      <div class="eyebrow"><span class="rule"></span> Hash-only keys</div>
-      <h2>A database<br>dump holds<br>no links</h2>
-      <p class="lede" style="max-width: 540px;">Only a hash of each key is stored, so Penny can't show a link twice. Lost one? Re-issue, and the old link dies.</p>
+<!-- 6 · View links (real screenshots) ================================= -->
+<section class="slide vl" data-n="6">
+  <div class="vl-inner">
+    <div class="vl-top">
+      <div class="vl-copy">
+        <div class="eyebrow"><span class="rule"></span> View links <em class="pro">Pro</em></div>
+        <h2>Opens once.<br>For one person.</h2>
+        <p class="lede">Craft's Share link works for anyone it's forwarded to. Penny's opens once, in one browser.</p>
+      </div>
+      <figure class="vl-hud">
+        <div class="cpc-frame">
+          <div class="cpc-chrome"><b></b><b></b><b></b><em>Entries → Harbour Line opens to passengers…</em></div>
+          <div class="crop" style="width: 880px; height: 282px;"><img src="shots/penny-share-once.png" alt="" style="width: 2358px; left: -1478px; top: -80px;"></div>
+        </div>
+        <figcaption><b>Share once</b> sits beside Save on any entry. One click, and the link is shown once.</figcaption>
+      </figure>
     </div>
-  </div>
-  <div class="panel keys">
-    <div class="keygrid">
-      <span class="hd">mint</span><span>random_bytes(32) → base64url</span><span class="done">43 characters</span>
-      <span class="hd">store</span><span>hash('sha256', $key)</span><span class="done">never the key</span>
-      <span class="hd">find</span><span><span class="kw">WHERE</span> keyHash = :hash</span><span class="done">one indexed test</span>
-      <span class="hd">wrong</span><span>malformed or unknown</span><span class="bad">same answer</span>
+    <div class="vl-steps">
+      <div class="vl-step">
+        <div class="vl-head"><span class="vl-n">1</span><div><b>A scanner fetches it</b><span class="ok">Nothing spent</span></div></div>
+        <div class="cpc-frame">
+          <div class="cpc-chrome"><b></b><b></b><b></b><em>/penny/IFdAtEah1Fj3…</em></div>
+          <div class="crop hosted" style="width: 100%; height: 300px;"><img src="shots/penny-view-open.png" alt="" style="width: 797px; left: -134px; top: -28px;"></div>
+        </div>
+        <p>Safe Links, mail scanners and chat previews fetch links. None of them press buttons.</p>
+      </div>
+      <div class="vl-step">
+        <div class="vl-head"><span class="vl-n">2</span><div><b>Priya presses the button</b><span class="done">Spent, bound to her browser</span></div></div>
+        <div class="cpc-frame">
+          <div class="cpc-chrome"><b></b><b></b><b></b><em>/press/harbour-line-opens?token=…</em></div>
+          <div class="crop" style="width: 100%; height: 300px; background: #f9f8f4;"><img src="shots/penny-view-page.png" alt="" style="width: 797px; left: -116px; top: -46px;"></div>
+        </div>
+        <p>A disabled entry, on its real URL, through your own templates. Reloads for 30 minutes (the default).</p>
+      </div>
+      <div class="vl-step">
+        <div class="vl-head"><span class="vl-n bad-n">3</span><div><b>Forwarded, copied or later</b><span class="bad">Closed</span></div></div>
+        <div class="cpc-frame">
+          <div class="cpc-chrome"><b></b><b></b><b></b><em>the same URL, another browser</em></div>
+          <div class="crop hosted" style="width: 100%; height: 300px;"><img src="shots/penny-view-closed.png" alt="" style="width: 797px; left: -134px; top: -33px;"></div>
+        </div>
+        <p>Another browser, a revoked invite or an elapsed window all land on a closed page.</p>
+      </div>
     </div>
-    <div class="trail-label">Every step is on the record</div>
-    <div class="crop" style="width: 906px; height: 249px;"><img src="shots/penny-invite-edit.png" alt="" style="width: 1349px; left: -32px; top: -1234px;"></div>
   </div>
   <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>
 </section>
@@ -606,7 +650,9 @@
       <div class="cell"><b>Drafts until they submit</b><span>Entries and categories are edited as a draft. A half-finished session never reaches your site.</span></div>
       <div class="cell"><b>Hold for review <em class="pro">Pro</em></b><span>Submission lands as a draft for you to approve, instead of going live.</span></div>
       <div class="cell"><b>The whole editor, briefly <em class="pro">Pro</em></b><span>A temporary, tightly-permissioned control panel account, deleted when they are done.</span></div>
+      <div class="cell"><b>Share once <em class="pro">Pro</em></b><span>A view link to any entry, drafts and disabled ones included. It opens once, in one browser.</span></div>
       <div class="cell"><b>Emails and reminders <em class="pro">Pro</em></b><span>Send the link, chase it before the deadline, and hear when it comes back.</span></div>
+      <div class="cell"><b>Hash-only keys</b><span>A database dump holds no links, and every step lands in the invite's audit trail.</span></div>
     </div>
   </div>
   <div class="footer"><img src="assets/icon.svg" alt=""> <b>Penny</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-penny</div>

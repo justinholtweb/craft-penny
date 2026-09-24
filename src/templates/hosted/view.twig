@@ -1,0 +1,43 @@
+{% extends "penny/hosted/_layout" %}
+
+{#
+ # The page a view link's GET gets, and it spends nothing.
+ #
+ # Mail scanners, Safe Links and chat unfurlers all fetch links before their recipient does. None of
+ # them press buttons, so the link is spent by the button below and not by arriving here.
+ #}
+
+{% set pageTitle = "A page has been shared with you"|t('penny') %}
+{% set brandingAccent = invite.getBranding().accentColor %}
+{% set windowMinutes = settings.viewWindowMinutes %}
+
+{% block header %}
+    <h1>{{ invite.recipientName
+        ? "{name}, a page has been shared with you"|t('penny', { name: invite.recipientName })
+        : "A page has been shared with you"|t('penny') }}</h1>
+{% endblock %}
+
+{% block content %}
+    {% if invite.message %}
+        <div class="penny-message">{{ invite.message|nl2br }}</div>
+    {% endif %}
+
+    <div class="penny-card">
+        {% if target and target.label %}
+            <h2>{{ target.label }}</h2>
+        {% endif %}
+
+        <p>{{ "This link works once. When you open it, the page is yours to read for the next {n, plural, =1{minute} other{# minutes}}, in this browser only. After that, or anywhere else, the link will not open."|t('penny', { n: windowMinutes }) }}</p>
+
+        <form method="post" accept-charset="UTF-8" class="penny-actions">
+            {{ csrfInput() }}
+            {{ actionInput('penny/view/open') }}
+            {{ hiddenInput('key', key) }}
+            <button type="submit" class="penny-btn penny-btn--primary">{{ "Open the page"|t('penny') }}</button>
+        </form>
+
+        {% if invite.expiryDate %}
+            <p class="penny-quiet">{{ "Unopened, this link stops working on {date}."|t('penny', { date: invite.expiryDate|datetime('long') }) }}</p>
+        {% endif %}
+    </div>
+{% endblock %}

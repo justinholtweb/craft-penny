@@ -124,3 +124,30 @@ body.penny-has-hand-in {
     color: var(--medium-text-color, #606d7b);
     font-size: 0.8125rem;
 }
+
+/* A view link edits nothing, so the invite screen hides what only an edit invite needs. */
+body.penny-view-invite .penny-target-scope,
+body.penny-view-invite #penny-add-target,
+body.penny-view-invite #requireReview-field,
+body.penny-view-invite #notifyEmails-field {
+    display: none;
+}
+
+/* "Share once": the link, and the one chance to copy it. */
+.penny-share-hud {
+    width: 420px;
+    max-width: 80vw;
+}
+
+.penny-share-hud-heading {
+    margin: 0 0 8px;
+    font-weight: 600;
+}
+
+.penny-share-hud .flex {
+    flex-wrap: nowrap;
+}
+
+.penny-share-hud .light {
+    margin: 8px 0 0;
+}

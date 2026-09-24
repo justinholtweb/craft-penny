@@ -20,6 +20,7 @@ enum EventType: string
     case Revoked = 'revoked';
     case Expired = 'expired';
     case Denied = 'denied';
+    case Viewed = 'viewed';
 
     public function label(): string
     {
@@ -35,6 +36,7 @@ enum EventType: string
             self::Revoked => Craft::t('penny', 'Revoked'),
             self::Expired => Craft::t('penny', 'Expired'),
             self::Denied => Craft::t('penny', 'Access denied'),
+            self::Viewed => Craft::t('penny', 'Link viewed'),
         };
     }
 }

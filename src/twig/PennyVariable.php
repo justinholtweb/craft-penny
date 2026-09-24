@@ -29,7 +29,10 @@ class PennyVariable
         return $query;
     }
 
-    /** Live invites covering an element — "this page is out with the client right now". */
+    /**
+     * Live invites covering an element — "this page is out with the client right now". Unopened
+     * view links count: somebody has been sent this page and has not looked yet.
+     */
     public function invitesFor(ElementInterface $element): InviteQuery
     {
         return Invite::find()
@@ -37,7 +40,7 @@ class PennyVariable
             ->live();
     }
 
-    /** Whether anybody currently holds a live invite to edit this element. */
+    /** Whether anybody currently holds a live invite to this element — to edit it, or to view it. */
     public function isOut(ElementInterface $element): bool
     {
         return $this->invitesFor($element)->exists();

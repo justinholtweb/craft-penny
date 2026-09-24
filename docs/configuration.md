@@ -14,7 +14,7 @@ None of them are required, and the defaults are a sensible starting point for mo
 |---|---|---|
 | Invite URL prefix | `penny` | The first part of the link you hand out, so links look like `https://example.com/penny/<key>`. Letters, numbers, hyphens, underscores and slashes. |
 | Default expiry | 14 days | How long a new invite lasts. You can change it on each invite. 0 means new invites have no deadline. |
-| Default surface | Penny page | Where new invites send their recipient: the **Penny page** or the **Control panel** (Pro). |
+| Default surface | Penny page | What **What the link does** starts as on a new invite: editing on the **Penny page**, or in the **Control panel** (Pro). View links are chosen on the invite itself. |
 | Acting user | empty | Whose identity the Penny page borrows so that field inputs can render. Empty means whoever created the invite. |
 
 ### How the link works
@@ -26,6 +26,12 @@ has none of the control panel's navigation, so the recipient has nowhere else to
 
 If a page on your site already lives at `/penny`, change the prefix. Leave it empty and Penny
 registers no site route at all, and hands out the control panel URL instead.
+
+View links (Pro) are the exception to the redirect. They show a page on your site, and the browser
+that opens one has to be given a cookie by your site, so they are answered on the site at
+`/<prefix>/<key>` and never go to the control panel. With the prefix empty, a view link uses a site
+action URL instead, `/actions/penny/view/index?key=<key>` (with your own `actionTrigger` in place of
+`actions`).
 
 ### The acting user
 
@@ -50,6 +56,16 @@ the first active admin.
 
 This surface creates a real Craft user for the duration. **Craft Solo allows one user, so on Solo the
 control panel surface cannot work.** Use the Penny page there.
+
+## View links (Pro)
+
+| Setting | Default | What it does |
+|---|---|---|
+| Viewing window | 30 minutes | How long the browser that opened a view link can keep reloading the page. No other browser can see it at any point. Then it closes for good. The lowest value is 1. |
+
+The window starts when the recipient presses **Open the page**, not when the invite is created or
+sent. The invite's **Expires** date only decides how long the link can wait to be opened. See
+[Usage](https://justinholt.com/plugins/craft-penny/docs/usage#view-links-pro).
 
 ## Email
 
@@ -96,6 +112,7 @@ return [
     'actingUserId' => null,
     'cpSessionDuration' => 3600,
     'deleteSessionUsers' => true,
+    'viewWindowMinutes' => 30,
     'sendOnCreate' => true,
     'remindDaysBefore' => 3,
     'notifyEmails' => "editor@example.com\nsam@example.com",
@@ -107,8 +124,9 @@ return [
 ];
 ```
 
-`defaultSurface` is `hosted` (the Penny page) or `cp` (the control panel). On Lite, leave it on
-`hosted`: an invite set to the control panel cannot be saved without Pro.
+`defaultSurface` is `hosted` (the Penny page) or `cp` (the control panel). It cannot be `view`:
+view links are picked per invite, or made with **Share once**. On Lite, leave it on `hosted`: an
+invite set to the control panel cannot be saved without Pro.
 
 ## Permissions
 
@@ -117,7 +135,7 @@ Penny adds these under **Settings → Users → [group or user] → Penny**. Adm
 | Permission | Lets them |
 |---|---|
 | View invites | See **Penny → Invites** and open an invite. |
-| Create and edit invites | Make and change invites, re-issue a link and, on Pro, email a fresh one. |
+| Create and edit invites | Make and change invites, re-issue a link and, on Pro, email a fresh one and use **Share once**. |
 | Delete and revoke invites | Turn a link off, and delete an invite. |
 | Approve submitted content | Publish content that was held for review (Pro). |
 

@@ -1,22 +1,28 @@
 {% extends "penny/_emails/_shell" %}
 
 {% block body %}
+    {% set isView = invite.getSurface().value == 'view' %}
     <p>{{ invite.recipientName ? "Hi {name},"|t('penny', { name: invite.recipientName }) : "Hello,"|t('penny') }}</p>
 
     {% if invite.message %}
         <p>{{ invite.message|nl2br }}</p>
     {% else %}
-        <p>{{ "There is some content on {site} that needs your input."|t('penny', { site: invite.getSite().getName() }) }}</p>
+        <p>{{ (isView
+            ? "{site} has shared a page with you."
+            : "There is some content on {site} that needs your input.")|t('penny', { site: invite.getSite().getName() }) }}</p>
     {% endif %}
 
     <p style="margin:28px 0;">
         <a href="{{ url }}" style="display:inline-block;background:{{ settings.getAccentColor() }};color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:6px;font-weight:600;">
-            {{ "Open the form"|t('penny') }}
+            {{ (isView ? "View the page" : "Open the form")|t('penny') }}
         </a>
     </p>
 
     <p style="font-size:14px;color:#6b7280;">
-        {% if invite.expiryDate %}
+        {% if isView %}
+            {{ "The link opens once. Open it when you are ready to read: from then on it works in that browser only, for {n, plural, =1{one minute} other{# minutes}}."|t('penny', { n: settings.viewWindowMinutes }) }}
+            {% if invite.expiryDate %}{{ "Unopened, it stops working on {date}."|t('penny', { date: invite.expiryDate|datetime('long') }) }}{% endif %}
+        {% elseif invite.expiryDate %}
             {{ "The link works until {date}, and stops as soon as you have sent your answers in."|t('penny', { date: invite.expiryDate|datetime('long') }) }}
         {% else %}
             {{ "The link stops working as soon as you have sent your answers in."|t('penny') }}

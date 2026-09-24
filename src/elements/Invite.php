@@ -145,7 +145,7 @@ class Invite extends Element
         }
 
         if ($this->dateApplied !== null) {
-            return InviteStatus::Submitted;
+            return $this->getSurface() === Surface::View ? InviteStatus::Viewed : InviteStatus::Submitted;
         }
 
         if ($this->dateSubmitted !== null) {
@@ -280,7 +280,7 @@ class Invite extends Element
     /** The link to hand over, if this request minted the key. */
     public function getInviteUrl(): ?string
     {
-        return $this->_plainKey === null ? null : Plugin::getInstance()->keys->urlForKey($this->_plainKey);
+        return $this->_plainKey === null ? null : Plugin::getInstance()->keys->urlForKey($this->_plainKey, $this);
     }
 
     // ------------------------------------------------------------------ validation
@@ -350,6 +350,50 @@ class Invite extends Element
 
         if ($this->getSurface() === Surface::Cp && !$plugin->isPro()) {
             $this->addError('surface', Craft::t('penny', 'Control panel sessions are a Pro feature.'));
+        }
+
+        if ($this->getSurface() === Surface::View) {
+            $this->validateViewTarget($targets);
+        }
+    }
+
+    /**
+     * A view link shows one page, and it has to be a page.
+     *
+     * One target, because the link lands on exactly one URL; an existing element, because there is
+     * nothing to look at in an entry nobody has created yet; and one with a URL on the site, because
+     * that is where it is shown.
+     *
+     * @param Target[] $targets
+     */
+    private function validateViewTarget(array $targets): void
+    {
+        if (!Plugin::getInstance()->isPro()) {
+            $this->addError('surface', Craft::t('penny', 'View links are a Pro feature.'));
+
+            return;
+        }
+
+        if (count($targets) !== 1) {
+            $this->addError('targets', Craft::t('penny', 'A view link shows one thing. Remove the others, or make an invite per page.'));
+
+            return;
+        }
+
+        $target = $targets[0];
+
+        if ($target->getIsNew()) {
+            $this->addError('targets', Craft::t('penny', 'A view link needs something that already exists.'));
+
+            return;
+        }
+
+        $element = Plugin::getInstance()->views->elementFor($this, $target);
+
+        if ($element !== null && $element->getUrl() === null) {
+            $this->addError('targets', Craft::t('penny', '“{title}” has no page on this site to show.', [
+                'title' => $element->getUiLabel(),
+            ]));
         }
     }
 
@@ -456,7 +500,7 @@ class Invite extends Element
             ['heading' => Craft::t('penny', 'Status')],
         ];
 
-        foreach ([InviteStatus::Pending, InviteStatus::Opened, InviteStatus::AwaitingReview, InviteStatus::Submitted, InviteStatus::Expired, InviteStatus::Revoked] as $status) {
+        foreach ([InviteStatus::Pending, InviteStatus::Opened, InviteStatus::AwaitingReview, InviteStatus::Submitted, InviteStatus::Viewed, InviteStatus::Expired, InviteStatus::Revoked] as $status) {
             $sources[] = [
                 'key' => "status:$status->value",
                 'label' => $status->label(),
@@ -473,7 +517,7 @@ class Invite extends Element
         return [
             'title' => ['label' => Craft::t('penny', 'Invite')],
             'recipient' => ['label' => Craft::t('penny', 'Recipient')],
-            'targetSummary' => ['label' => Craft::t('penny', 'Lets them edit')],
+            'targetSummary' => ['label' => Craft::t('penny', 'Covers')],
             'surface' => ['label' => Craft::t('penny', 'Surface')],
             'expiryDate' => ['label' => Craft::t('penny', 'Expires')],
             'dateFirstOpened' => ['label' => Craft::t('penny', 'Opened')],

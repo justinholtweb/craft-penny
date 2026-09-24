@@ -152,6 +152,47 @@ class Targets extends Component
         Craft::$app->getDb()->createCommand()->delete(Table::TARGETS, $condition)->execute();
     }
 
+    /**
+     * Carries over what the invite form cannot: the draft a recipient is part-way through (or the
+     * draft a view link was shared from), where a submission ended up, and when it was saved.
+     *
+     * Targets posted from the form are built from scratch, and saving them as they are wipes all
+     * three — the next visit then starts a fresh draft with the recipient's work stranded in the
+     * old one. Only for a target that still points at the same thing; one that has been changed to
+     * point somewhere else really does start again.
+     *
+     * @param Target[] $targets
+     */
+    public function keepSavedState(Invite $invite, array $targets): void
+    {
+        if (!$invite->id) {
+            return;
+        }
+
+        $stored = [];
+
+        foreach ($this->getTargetsForInvite($invite) as $existing) {
+            $stored[$existing->id] = $existing;
+        }
+
+        foreach ($targets as $target) {
+            $previous = $target->id !== null ? ($stored[$target->id] ?? null) : null;
+
+            if (
+                $previous === null
+                || $previous->kind !== $target->kind
+                || $previous->elementType !== $target->elementType
+                || $previous->elementId !== $target->elementId
+            ) {
+                continue;
+            }
+
+            $target->draftId ??= $previous->draftId;
+            $target->resultElementId ??= $previous->resultElementId;
+            $target->dateSaved ??= $previous->dateSaved;
+        }
+    }
+
     /** Writes the fields a redemption changes, without touching anything the admin owns. */
     public function markSaved(Target $target, ?int $draftId = null, ?int $resultElementId = null): void
     {

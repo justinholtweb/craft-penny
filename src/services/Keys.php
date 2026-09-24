@@ -6,6 +6,8 @@ use Craft;
 use craft\base\Component;
 use craft\helpers\UrlHelper;
 use craft\web\Request as WebRequest;
+use justinholtweb\penny\elements\Invite;
+use justinholtweb\penny\enums\Surface;
 use justinholtweb\penny\Plugin;
 
 /**
@@ -53,13 +55,21 @@ class Keys extends Component
      * The pretty, site-facing link — the one that goes in the email.
      *
      * With the prefix emptied no site route is registered at all, so a site link would 404. The
-     * hosted link works without one, so that is the link.
+     * hosted link works without one, so that is the link — except for a view link, which has to
+     * be opened on the site, because the site is where the page it shows lives and where the
+     * cookie that lets this browser see it has to be set. An action URL gets there without a route.
      */
-    public function urlForKey(string $key): string
+    public function urlForKey(string $key, ?Invite $invite = null): string
     {
         $prefix = trim(Plugin::getInstance()->getSettings()->inviteUriPrefix, '/');
 
         if ($prefix === '') {
+            if ($invite?->getSurface() === Surface::View) {
+                $trigger = Craft::$app->getConfig()->getGeneral()->actionTrigger;
+
+                return UrlHelper::siteUrl("$trigger/penny/view/index", ['key' => $key], siteId: $invite->targetSiteId);
+            }
+
             return $this->hostedUrlForKey($key);
         }
 

@@ -5,7 +5,7 @@
 {% if not isPro %}
     <div class="readable">
         <blockquote class="note">
-            <p>{{ "You’re running Penny Lite. Email delivery, control panel sessions, review mode and multi-target invites are Pro features."|t('penny') }}</p>
+            <p>{{ "You’re running Penny Lite. Email delivery, control panel sessions, view links, review mode and multi-target invites are Pro features."|t('penny') }}</p>
         </blockquote>
     </div>
 {% endif %}
@@ -84,6 +84,22 @@
     id: 'deleteSessionUsers',
     name: 'deleteSessionUsers',
     on: settings.deleteSessionUsers,
+}) }}
+
+<hr>
+
+<h2>{{ "View links"|t('penny') }}{{ isPro ? '' : ' (' ~ "Pro"|t('penny') ~ ')' }}</h2>
+
+{{ forms.textField({
+    label: "Viewing window"|t('penny'),
+    instructions: "A view link is spent the moment it is opened. For this many minutes afterwards, the browser that opened it can reload the page; no other browser can. Then it closes for good."|t('penny'),
+    id: 'viewWindowMinutes',
+    name: 'viewWindowMinutes',
+    type: 'number',
+    min: 1,
+    size: 5,
+    value: settings.viewWindowMinutes,
+    errors: settings.getErrors('viewWindowMinutes'),
 }) }}
 
 <hr>

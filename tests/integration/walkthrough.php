@@ -5,6 +5,7 @@
  *
  *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php setup
  *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php setup cp   # Pro control panel surface
+ *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php setup view # Pro view link, on a disabled entry
  *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php check
  *     ddev exec php /var/www/craft-penny/tests/integration/walkthrough.php teardown
  */
@@ -41,6 +42,12 @@ function findSection(): ?Section
     return Craft::$app->getEntries()->getSectionByHandle('sec' . HANDLE_SUFFIX);
 }
 
+/** The site template the fixture entries render with, so a view link has a page to show. */
+function templatePath(): string
+{
+    return Craft::$app->getPath()->getSiteTemplatesPath() . '/_penny-walk/entry.twig';
+}
+
 if ($command === 'teardown') {
     foreach (Invite::find()->status(null)->all() as $invite) {
         Craft::$app->getElements()->deleteElement($invite, true);
@@ -60,6 +67,11 @@ if ($command === 'teardown') {
         if (($field = $fieldsService->getFieldByHandle($handle)) !== null) {
             $fieldsService->deleteField($field);
         }
+    }
+
+    if (is_file(templatePath())) {
+        unlink(templatePath());
+        @rmdir(dirname(templatePath()));
     }
 
     Craft::$app->getProjectConfig()->saveModifiedConfigData();
@@ -133,7 +145,9 @@ if (findSection() === null) {
     $section->type = Section::TYPE_CHANNEL;
     $section->setSiteSettings([new Section_SiteSettings([
         'siteId' => Craft::$app->getSites()->getPrimarySite()->id,
-        'hasUrls' => false,
+        'hasUrls' => true,
+        'uriFormat' => 'penny-walk/{slug}',
+        'template' => '_penny-walk/entry',
     ])]);
     $section->setEntryTypes([$entryType]);
 
@@ -143,6 +157,19 @@ if (findSection() === null) {
     }
 
     Craft::$app->getProjectConfig()->saveModifiedConfigData();
+}
+
+if (!is_file(templatePath())) {
+    @mkdir(dirname(templatePath()), 0775, true);
+    file_put_contents(templatePath(), <<<'TWIG'
+<!DOCTYPE html>
+<html><head><title>{{ entry.title }}</title></head>
+<body>
+<h1 id="penny-walk-title">{{ entry.title }}</h1>
+<div id="penny-walk-body">{{ entry.bodyPennyWalk }}</div>
+<p id="penny-walk-status">{{ entry.status }}</p>
+</body></html>
+TWIG);
 }
 
 $section = findSection();
@@ -172,6 +199,12 @@ foreach ($entry->getFieldLayout()->getTabs() as $tab) {
     }
 }
 
+// A view link is for what the public cannot see yet, so show one that is switched off.
+if (($argv[2] ?? null) === 'view' && $entry->enabled) {
+    $entry->enabled = false;
+    Craft::$app->getElements()->saveElement($entry);
+}
+
 $admin = User::find()->admin()->status(User::STATUS_ACTIVE)->orderBy(['id' => SORT_ASC])->one();
 
 $invite = $plugin->invites->create([
@@ -179,7 +212,7 @@ $invite = $plugin->invites->create([
     'authorId' => $admin?->id,
     'recipientName' => 'Sam',
     'message' => "Could you update the title and the body? Thanks.",
-    'surface' => ($argv[2] ?? null) === 'cp' ? 'cp' : 'hosted',
+    'surface' => in_array($argv[2] ?? null, ['cp', 'view'], true) ? $argv[2] : 'hosted',
 ]);
 
 $invite->setTargets([new Target([

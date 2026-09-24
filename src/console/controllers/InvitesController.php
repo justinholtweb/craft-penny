@@ -172,7 +172,7 @@ class InvitesController extends Controller
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
-        $this->stdout(Plugin::getInstance()->keys->urlForKey($key) . "\n");
+        $this->stdout(Plugin::getInstance()->keys->urlForKey($key, $invite) . "\n");
 
         return ExitCode::OK;
     }

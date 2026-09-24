@@ -7,8 +7,11 @@
 {% endblock %}
 
 {% block content %}
+    {% set isView = result.invite and result.invite.getSurface().value == 'view' %}
     <div class="penny-card penny-card--quiet">
-        {% if result.reason == 'submitted' %}
+        {% if isView and result.reason in ['submitted', 'closed'] %}
+            <p>{{ "This was a one-time link. It has been opened, and it only ever works in the browser that opened it, for a short while. If you need to see the page again, ask whoever sent it to you for a new link."|t('penny') }}</p>
+        {% elseif result.reason == 'submitted' %}
             <p>{{ "Thanks — this one has already been filled in. There is nothing left to do."|t('penny') }}</p>
         {% elseif result.reason == 'expired' %}
             <p>{{ "The deadline on this request has passed. Ask whoever sent it to you for a fresh link."|t('penny') }}</p>

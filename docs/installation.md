@@ -29,7 +29,7 @@ and changes nothing on your site until you make one.
 **Lite is free.** It gives you the Penny page, one target per invite, entries and globals, field
 scoping, expiry, revoke, re-issue and the audit trail. **Pro is $79, with a $59/year renewal for
 updates**, and adds more targets per invite, more kinds of content, the control panel surface,
-email, and review.
+one-time view links, email, and review.
 
 | | Lite | Pro |
 | --- | --- | --- |
@@ -44,6 +44,7 @@ email, and review.
 | New-entry targets | | ✓ |
 | Category, tag, asset and user targets | | ✓ |
 | Temporary control panel sessions | | ✓ |
+| View links and **Share once** | | ✓ |
 | Email delivery, reminders, submission notices | | ✓ |
 | Hold for review | | ✓ |
 

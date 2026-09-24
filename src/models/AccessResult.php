@@ -21,6 +21,9 @@ class AccessResult extends Model
     public const REASON_REVOKED = 'revoked';
     public const REASON_MISCONFIGURED = 'misconfigured';
 
+    /** A view link's page, refused after the link was spent: another browser, or the window is up. */
+    public const REASON_CLOSED = 'closed';
+
     public bool $ok = false;
     public ?Invite $invite = null;
     public ?string $reason = null;

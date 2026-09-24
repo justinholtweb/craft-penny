@@ -170,6 +170,13 @@ class InviteQuery extends ElementQuery
                 'and',
                 ['penny_invites.dateRevoked' => null],
                 ['not', ['penny_invites.dateApplied' => null]],
+                ['not', ['penny_invites.surface' => Surface::View->value]],
+            ],
+            InviteStatus::Viewed->value => [
+                'and',
+                ['penny_invites.dateRevoked' => null],
+                ['not', ['penny_invites.dateApplied' => null]],
+                ['penny_invites.surface' => Surface::View->value],
             ],
             InviteStatus::AwaitingReview->value => [
                 'and',

@@ -47,6 +47,12 @@ class Settings extends Model
      */
     public bool $deleteSessionUsers = true;
 
+    /**
+     * How long, in minutes, the browser that opened a view link may keep looking — reloads, a
+     * second tab — before the page closes for good. The link itself is spent on the first look.
+     */
+    public int $viewWindowMinutes = 30;
+
     /** Whether Penny emails the link itself when an invite is created (Pro). */
     public bool $sendOnCreate = true;
 
@@ -78,6 +84,7 @@ class Settings extends Model
             [['inviteUriPrefix'], 'match', 'pattern' => '/^[A-Za-z0-9][A-Za-z0-9\-_\/]*$/', 'message' => Craft::t('penny', 'Use letters, numbers, hyphens, underscores and slashes.')],
             [['defaultSurface'], 'in', 'range' => ['hosted', 'cp']],
             [['defaultExpiryDays', 'cpSessionDuration', 'remindDaysBefore', 'keepEventsDays', 'maxAttemptsPerHour'], 'integer', 'min' => 0],
+            [['viewWindowMinutes'], 'integer', 'min' => 1],
             [['actingUserId', 'logoAssetId'], 'integer'],
             [['deleteSessionUsers', 'sendOnCreate'], 'boolean'],
             [['accentColor'], 'match', 'pattern' => '/^#?[0-9A-Fa-f]{6}$/', 'message' => Craft::t('penny', 'Enter a six-digit hex colour.')],

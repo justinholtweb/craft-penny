@@ -7,7 +7,8 @@ ticks which of its fields, and gets a single-use link. The recipient fills it in
 the link dies. Distributed as `justinholtweb/craft-penny`. **Lite + Pro, $79 / $59 renewal.**
 
 Modelled on WordPress's *One Time Login*, but that plugin hands over a whole admin session and this
-one hands over a **scope**.
+one hands over a **scope**. Pro also makes **view links**: one person, one look at a page on the
+site (drafts and disabled entries included), with nothing to edit.
 
 ## Tech Stack
 
@@ -93,6 +94,26 @@ of anything that keeps drafts, in both guards, which also takes the button off t
 gates it on `canSaveCanonical()`). The only way work goes live from a session is the hand-in bar →
 `penny/session/hand-in` → `Sessions::handIn()`, which lifts that refusal for its own request.
 
+### View links (Pro)
+
+`Surface::View` — a third answer to "where do they edit", which is "nowhere". One target, an
+existing element with a URL. Three steps in `ViewController`, and the split is the design:
+
+1. **GET the link → `index`**, which spends *nothing*. Mail scanners, Safe Links and chat unfurlers
+   fetch links before the recipient does; a link spent by a fetch is dead on arrival. Not even
+   `markOpened()` runs here, because the fetcher is probably a robot.
+2. **The button → `open`** spends it (`Invites::markViewed()`: `dateSubmitted` + `dateApplied`, so
+   everything else in Penny already treats it as used; status reads *Viewed* because the invite
+   knows it was a view), sets a Yii-validated cookie naming the invite and its key, and redirects to
+   the element's own URL with a Craft token (no usage limit — the page reloads — expiring with the
+   window).
+3. **The token route → `render`** checks `Views::refusal()` on *every* load (cookie, revoked,
+   window), then does what Craft's preview action does and re-routes the request.
+
+The site gateway (`/penny/<key>`) looks the key up once, only to see whether it is a view link;
+those are answered on the site because the cookie must be set on the site's host. **Share once**
+is `Element::EVENT_DEFINE_ADDITIONAL_BUTTONS` → `penny/view/share`.
+
 ## Traps found while building this
 
 - **Craft ignores `$event->isValid` on `Elements::EVENT_BEFORE_SAVE_ELEMENT`.** It constructs the
@@ -137,6 +158,14 @@ gates it on `canSaveCanonical()`). The only way work goes live from a session is
   an override.
 - **Craft handles have no hyphens in some places and do in others** — plugin handles may be
   kebab-case, so "a handle can't contain a hyphen" is not a guarantee you can build on.
+- **Craft's preview action only answers its own tokens.** `PreviewController::actionPreview()`
+  starts with `requireToken()`, which compares the token's route to *its own* route — so a plugin
+  token routed anywhere else cannot forward to it (400, "Valid token required"). `ViewController::
+  actionRender()` does the same handful of public calls itself: placeholder element, no-cache,
+  `checkIfActionRequest(true, false)`, `checkToken = false`, `handleRequest($request, true)`.
+- **A usage-limited Craft token is the obvious one-time link, and it does not work.** Scanners and
+  unfurlers spend it before the person clicks, and one page view is several requests. Spend on a
+  POST nothing automated makes; bind to the browser with a cookie.
 - **Only nested elements have `getOwner()`.** Calling it on anything else goes through `__call` and
   throws `UnknownMethodException` — and the control panel asks the authorize events about the
   signed-in *user* on every page, so an unguarded call 500s the whole CP session. The console checks
@@ -160,14 +189,16 @@ No local PHP on this Mac. Everything runs inside the plugin-testing container:
 
 ```sh
 cd ~/Sites/plugin-testing
-ddev exec php /var/www/craft-penny/tests/integration/checks.php    # 72 checks
+ddev exec php /var/www/craft-penny/tests/integration/checks.php    # 83 checks
 ddev exec php /var/www/craft-penny/tests/integration/edition.php pro
 ddev exec bash -c 'find /var/www/craft-penny/src -name "*.php" -print0 | xargs -0 -n1 php -l'
 ```
 
 `tests/integration/walkthrough.php setup|check|teardown` builds a fixture section, entry and live
-invite and prints the link (`setup cp` for the Pro control panel surface), for walking the whole
-thing over HTTP the way a recipient would.
+invite and prints the link (`setup cp` for the Pro control panel surface, `setup view` for a view
+link on a disabled entry), for walking the whole thing over HTTP the way a recipient would. The
+fixture section has URLs and `setup` writes its site template to `templates/_penny-walk/`;
+`teardown` removes both.
 
 The checks are idempotent and self-cleaning — fields, entry type, section, entry and every invite
 are removed in a `finally` block, pass or fail, and the edition is put back.

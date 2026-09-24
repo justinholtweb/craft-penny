@@ -1,9 +1,12 @@
 {% extends "penny/_emails/_shell" %}
 
 {% block body %}
+    {% set isView = invite.getSurface().value == 'view' %}
     <p>{{ invite.recipientName ? "Hi {name},"|t('penny', { name: invite.recipientName }) : "Hello,"|t('penny') }}</p>
 
-    <p>{{ "Just a nudge — {site} is still waiting on this one."|t('penny', { site: invite.getSite().getName() }) }}</p>
+    <p>{{ (isView
+        ? "Just a nudge — you have not opened the page {site} shared with you yet."
+        : "Just a nudge — {site} is still waiting on this one.")|t('penny', { site: invite.getSite().getName() }) }}</p>
 
     {% if invite.expiryDate %}
         <p>{{ "It closes on {date}."|t('penny', { date: invite.expiryDate|datetime('long') }) }}</p>
@@ -11,7 +14,7 @@
 
     <p style="margin:28px 0;">
         <a href="{{ url }}" style="display:inline-block;background:{{ settings.getAccentColor() }};color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:6px;font-weight:600;">
-            {{ "Open the form"|t('penny') }}
+            {{ (isView ? "View the page" : "Open the form")|t('penny') }}
         </a>
     </p>
 

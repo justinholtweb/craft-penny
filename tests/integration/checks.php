@@ -139,7 +139,10 @@ try {
     $section->setSiteSettings([
         new Section_SiteSettings([
             'siteId' => Craft::$app->getSites()->getPrimarySite()->id,
-            'hasUrls' => false,
+            // URLs so that a view link has a page to show. No template is needed for that: a view
+            // link only has to know where the page is, and these checks never render it.
+            'hasUrls' => true,
+            'uriFormat' => "penny-check-$suffix/{slug}",
             'enabledByDefault' => true,
         ]),
     ]);
@@ -994,6 +997,166 @@ try {
             ?: json_encode($config);
     });
 
+    // ------------------------------------------------------------------ view links
+
+    heading('View links');
+
+    // A request whose cookies are exactly the ones given, and unsigned, standing in for the one
+    // browser that pressed the button. Validation is off because these values never went through
+    // a real response; the signing is Yii's, and what is being checked here is Penny's comparison.
+    $browserWith = function(array $cookies): craft\web\Request {
+        $request = new craft\web\Request(['enableCookieValidation' => false, 'enableCsrfValidation' => false]);
+        $_COOKIE = $cookies;
+        $request->getCookies();
+        $_COOKIE = [];
+
+        return $request;
+    };
+
+    $openView = function(array $attributes = []) use ($plugin, $makeInvite): array {
+        $made = $makeInvite(array_merge(['surface' => Surface::View->value], $attributes), ['layoutElementUids' => null]);
+        $key = $made->getPlainKey();
+        $invite = $plugin->invites->getInviteById($made->id);
+        $response = new craft\web\Response();
+        $url = $plugin->views->open($invite, $response);
+        $cookie = $response->getCookies()->get('penny_view_' . $invite->id);
+
+        return [$plugin->invites->getInviteById($invite->id), $key, $url, $cookie];
+    };
+
+    check('a view link refuses something with no page on the site', function() use ($plugin, $admin) {
+        $invite = $plugin->invites->create(['title' => 'No page', 'authorId' => $admin->id, 'surface' => Surface::View->value]);
+        $invite->setTargets([new Target(['kind' => TargetKind::Element->value, 'elementType' => User::class, 'elementId' => $admin->id])]);
+
+        return (!$invite->validate() && $invite->getErrors('targets')) ?: 'a user with no URL was accepted';
+    });
+
+    check('a view link shows one thing', function() use ($plugin, $admin, $entry) {
+        $invite = $plugin->invites->create(['title' => 'Two pages', 'authorId' => $admin->id, 'surface' => Surface::View->value]);
+        $target = ['kind' => TargetKind::Element->value, 'elementType' => Entry::class, 'elementId' => $entry->id];
+        $invite->setTargets([new Target($target), new Target($target)]);
+
+        return (!$invite->validate() && $invite->getErrors('targets')) ?: 'two targets were accepted';
+    });
+
+    check('fetching a view link spends nothing, however often', function() use ($plugin, $makeInvite) {
+        $made = $makeInvite(['surface' => Surface::View->value], ['layoutElementUids' => null]);
+
+        foreach ([1, 2, 3] as $fetch) {
+            if (!$plugin->access->resolve($made->getPlainKey())->ok) {
+                return "fetch $fetch found the link spent";
+            }
+        }
+
+        return $plugin->invites->getInviteById($made->id)->getInviteStatus() === InviteStatus::Pending
+            ?: 'a fetch changed the status';
+    });
+
+    check('opening a view link spends it and lands on the page with a token', function() use ($plugin, $openView, $entry) {
+        [$invite, $key, $url, $cookie] = $openView();
+
+        if ($url === null || !str_contains($url, 'token=') || !str_contains($url, (string)$entry->slug)) {
+            return 'got ' . var_export($url, true);
+        }
+
+        if ($invite->getInviteStatus() !== InviteStatus::Viewed) {
+            return 'status is ' . $invite->getInviteStatus()->value;
+        }
+
+        return !$plugin->access->resolve($key)->ok ?: 'the link still opens';
+    });
+
+    check('the page shows in the browser that opened it, and no other', function() use ($plugin, $openView, $browserWith) {
+        [$invite, , , $cookie] = $openView();
+
+        if ($cookie === null) {
+            return 'no cookie was set';
+        }
+
+        $mine = $plugin->views->refusal($invite, $browserWith([$cookie->name => $cookie->value]));
+        $theirs = $plugin->views->refusal($invite, $browserWith([]));
+        $forged = $plugin->views->refusal($invite, $browserWith([$cookie->name => $invite->id . ':0:x']));
+
+        return ($mine === null && $theirs !== null && $forged !== null)
+            ?: 'mine=' . var_export($mine, true) . ' theirs=' . var_export($theirs, true) . ' forged=' . var_export($forged, true);
+    });
+
+    check('revoking closes a page that is still open', function() use ($plugin, $openView, $browserWith) {
+        [$invite, , , $cookie] = $openView();
+        $plugin->invites->revoke($invite);
+        $invite = $plugin->invites->getInviteById($invite->id);
+
+        return $plugin->views->refusal($invite, $browserWith([$cookie->name => $cookie->value])) !== null
+            ?: 'the page still shows after the link was revoked';
+    });
+
+    check('the page closes when the viewing window does', function() use ($plugin, $openView, $browserWith) {
+        [$invite, , , $cookie] = $openView();
+        $minutes = $plugin->getSettings()->viewWindowMinutes + 1;
+
+        craft\helpers\Db::update(justinholtweb\penny\db\Table::INVITES, [
+            'dateApplied' => craft\helpers\Db::prepareDateForDb((new DateTime())->modify("-$minutes minutes")),
+        ], ['id' => $invite->id], updateTimestamp: false);
+
+        $invite = $plugin->invites->getInviteById($invite->id);
+
+        return $plugin->views->refusal($invite, $browserWith([$cookie->name => $cookie->value])) !== null
+            ?: 'the page still shows after its window';
+    });
+
+    check('a view link can show a draft, and shows that draft', function() use ($plugin, $makeInvite, $entry, $admin, $bodyHandle) {
+        $draft = Craft::$app->getDrafts()->createDraft($entry, $admin->id, 'Shared draft');
+        $draft->setFieldValue($bodyHandle, 'only in the draft');
+        Craft::$app->getElements()->saveElement($draft);
+
+        $made = $makeInvite(['surface' => Surface::View->value], ['layoutElementUids' => null, 'draftId' => $draft->draftId]);
+        $invite = $plugin->invites->getInviteById($made->id);
+        $shown = $plugin->views->elementForInvite($invite);
+
+        return ($shown !== null && $shown->draftId === $draft->draftId && $shown->getFieldValue($bodyHandle) === 'only in the draft')
+            ?: 'showed ' . var_export($shown?->draftId, true);
+    });
+
+    check('a viewed link stays spent, even revoked and re-issued', function() use ($plugin, $openView) {
+        [$invite] = $openView();
+        $plugin->invites->revoke($invite);
+
+        return $plugin->invites->reissue($plugin->invites->getInviteById($invite->id)) === null
+            ?: 'a revoked, viewed invite handed out a new link that would say "already used"';
+    });
+
+    check('the view statuses are queryable', function() use ($plugin, $openView) {
+        [$invite] = $openView();
+
+        return (
+            Invite::find()->id($invite->id)->status(InviteStatus::Viewed->value)->exists()
+            && !Invite::find()->id($invite->id)->status(InviteStatus::Submitted->value)->exists()
+        ) ?: 'a viewed invite is filed under the wrong status';
+    });
+
+    check('re-saving an invite keeps the draft its recipient is working on', function() use ($plugin, $makeInvite) {
+        $invite = $plugin->invites->getInviteById($makeInvite()->id);
+        $stored = $invite->getTargets()[0];
+        $draft = $plugin->editor->workingElement($invite, $stored);
+
+        // What the invite form posts back: the same target, rebuilt from scratch.
+        $posted = new Target([
+            'id' => $stored->id,
+            'kind' => $stored->kind,
+            'elementType' => $stored->elementType,
+            'elementId' => $stored->elementId,
+            'layoutElementUids' => $stored->layoutElementUids,
+        ]);
+
+        $plugin->targets->keepSavedState($invite, [$posted]);
+        $invite->setTargets([$posted]);
+        $plugin->invites->save($invite);
+
+        $after = $plugin->invites->getInviteById($invite->id)->getTargets()[0];
+
+        return $after->draftId === $draft->draftId ?: 'the draft id went from ' . $draft->draftId . ' to ' . var_export($after->draftId, true);
+    });
+
     // ------------------------------------------------------------------ audit
 
     heading('The audit trail');
@@ -1094,6 +1257,13 @@ try {
 
         return ($plugin->targets->checkEditionSupport($target) !== null)
             ?: 'Lite accepted a user target';
+    });
+
+    check('Lite refuses a view link', function() use ($plugin, $admin, $entry) {
+        $invite = $plugin->invites->create(['title' => 'Lite view', 'authorId' => $admin->id, 'surface' => Surface::View->value]);
+        $invite->setTargets([new Target(['kind' => TargetKind::Element->value, 'elementType' => Entry::class, 'elementId' => $entry->id])]);
+
+        return (!$invite->validate() && $invite->getErrors('surface')) ?: 'Lite accepted a view link';
     });
 
     check('Lite still accepts an entry target', function() use ($plugin, $admin, $entry) {

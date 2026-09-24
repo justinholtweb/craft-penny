@@ -31,6 +31,9 @@ enum InviteStatus: string
     /** Turned off by hand. */
     case Revoked = 'revoked';
 
+    /** A view link somebody has opened. The link is dead; the browser that opened it has a while. */
+    case Viewed = 'viewed';
+
     public function label(): string
     {
         return match ($this) {
@@ -40,6 +43,7 @@ enum InviteStatus: string
             self::AwaitingReview => Craft::t('penny', 'Awaiting review'),
             self::Expired => Craft::t('penny', 'Expired'),
             self::Revoked => Craft::t('penny', 'Revoked'),
+            self::Viewed => Craft::t('penny', 'Viewed'),
         };
     }
 
@@ -53,6 +57,7 @@ enum InviteStatus: string
             self::AwaitingReview => 'orange',
             self::Expired => 'gray',
             self::Revoked => 'red',
+            self::Viewed => 'green',
         };
     }
 

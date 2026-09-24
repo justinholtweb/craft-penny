@@ -2,7 +2,7 @@
 title: Troubleshooting
 slug: troubleshooting
 order: 40
-summary: What to check when a link will not open, an email does not arrive, or submitted content is not where you expected.
+summary: What to check when a link will not open, a view link closes early, an email does not arrive, or submitted content is not where you expected.
 ---
 
 ## The recipient says the link does not work
@@ -18,22 +18,19 @@ What the recipient saw tells you which case it is:
 | This link is not valid. | The key matches no invite. Usually the link was cut short when it was copied or wrapped by an email client, or it has since been re-issued. | Check they have the whole link. If in doubt, re-issue and send the new one. |
 | This link has expired. | The deadline passed. | Re-issue it. The new link gets a fresh deadline. |
 | This link has been turned off. | It was revoked. | Re-issue it if they should have it back. |
-| This link has already been used. | It was submitted. | Make a new invite. A submitted invite cannot be re-issued. |
+| This link has already been used. | It was submitted, or it is a view link and somebody pressed **Open the page**. | Make a new invite. A submitted or viewed invite cannot be re-issued. |
 | Too many attempts. Try again later. | Their IP address has made too many wrong guesses. | See below. |
 | This link could not be opened. | A control panel invite could not create or sign in its temporary account. | See below. |
 
 A link that never existed and a link that is malformed get the same answer on purpose. Telling them
 apart would only help somebody guessing.
 
-## Re-issuing an expired invite gives a link that is also expired
-
-Re-issuing mints a new key but leaves the deadline alone. Change **Expires** on the invite, click
-**Save**, and then **Re-issue the link**.
-
 ## "Couldn't re-issue this link"
 
-The invite has been submitted. Its content is on the site, or waiting for review, and the invite is
-finished. Make a new invite for any further changes.
+The invite has been submitted, or it is a view link that has been viewed, including one that was
+revoked afterwards. Its content is on the site,
+or waiting for review, or the page has been seen, and the invite is finished. Make a new invite for
+any further changes, or another view link.
 
 ## "Too many attempts"
 
@@ -68,6 +65,68 @@ Penny could not create the temporary account or sign it in. The usual causes:
 - **Pro is not active.** A control panel invite on Lite opens on the Penny page instead, so this
   means something else went wrong. Check the Craft log for lines from the `penny` category, which say
   why the account could not be saved.
+
+## Saving a view link is refused
+
+| Message | Why |
+|---|---|
+| View links are a Pro feature. | **View once** needs Pro. |
+| A view link shows one thing. | It has more than one target. Remove the others, or make one view link per page. |
+| A view link needs something that already exists. | The target is set to create a new entry. |
+| "<title>" has no page on this site to show. | The element has no URL on the invite's site. Check the section has a URI format for that site, or pick another site under **Site**. |
+
+## A view link says it has already been used, but the recipient never saw it
+
+Somebody else pressed **Open the page** first. Opening the link does not spend it, so a mail scanner
+or a chat preview is not the cause; a person in a browser is. Usually the email was forwarded, the
+link was opened from a shared inbox or by an assistant, or the recipient pressed the button on one
+device and is now trying another.
+
+The invite's **What has happened** table has a "Link viewed" line with the time and IP address of
+the browser that pressed it, which is usually enough to tell who. Make a new view link for the
+recipient.
+
+## A view link opened, but on reload or on another device it says it has been used
+
+The page is tied to the browser that pressed **Open the page**, for the **Viewing window** (30
+minutes by default).
+
+- **Another browser or device**, or the page's address pasted somewhere else, gets "This link has
+  already been used." The page's address carries a token, but the token only works together with a
+  cookie set in the browser that opened it.
+- **A private window** counts as another browser, and so does the same browser after its cookies
+  have been cleared.
+- **After the window**, the page says "This page has closed." The address keeps answering for a
+  day after that, so it can say so; after that Craft answers it with its own "Invalid token" error.
+- **"This link has been turned off."** means the invite was revoked.
+
+If they need longer, raise **Viewing window** under **Penny → Settings → View links** and make them
+a new link. A changed setting does not reopen a link that has already closed.
+
+## A view link shows the live page, an old copy, or a 404
+
+The page is served at the element's own URL with a `token` query parameter, and it is only right if
+that request reaches Craft. Craft does not cache token requests, and Blitz skips them by default. A
+CDN, reverse proxy or full-page cache that ignores query strings will answer with whatever it has
+cached for that URL: the public version of the page, or a 404 if the entry is not live yet. Set it to
+pass any request with a `token` parameter through to Craft uncached.
+
+A disabled entry or a draft is not the cause by itself. Penny routes the request the way Craft
+routes a preview, so the page's URL resolves to the shared entry, and your template receives it as
+`entry`, whatever its status. A template that looks the entry up again with its own query, rather
+than using `entry`, may not find a disabled one, and could 404 on that.
+
+## "Share once" is missing from an edit screen
+
+The button only appears when:
+
+- Penny is on Pro,
+- you have the **Create and edit invites** permission,
+- the element has a URL on its site (an entry in a section with no URI format has none), and
+- you are not inside an invited control panel session.
+
+It is also left off revisions. If the button is there but refuses, you may not have permission to
+view that element, or that draft if it is somebody else's.
 
 ## Saving an invite says "Control panel sessions are a Pro feature"
 

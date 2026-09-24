@@ -2,15 +2,15 @@
 title: FAQ
 slug: faq
 order: 50
-summary: Pricing, Craft Solo, accounts, lost links, drafts, and how the keys are kept safe.
+summary: Pricing, Craft Solo, accounts, lost links, drafts, view links, and how the keys are kept safe.
 ---
 
 ### What does it cost?
 
 Lite is free. It covers the Penny page, one entry or global set per invite, field scoping, expiry,
 revoke, re-issue and the audit trail. Pro is $79 with a $59/year renewal, and adds multiple targets,
-new entries, categories, tags, assets and users, the control panel surface, email, reminders,
-submission notices and hold for review.
+new entries, categories, tags, assets and users, the control panel surface, one-time view links and
+**Share once**, email, reminders, submission notices and hold for review.
 
 ### Does it work on Craft Solo?
 
@@ -18,6 +18,8 @@ The Penny page does. It creates no Craft user, so it never counts against Solo's
 
 The control panel surface (Pro) does not. It creates a real, temporary user for each invite, and Solo
 has no room for a second one.
+
+View links (Pro) do. They create no user either.
 
 ### Does the recipient get an account?
 
@@ -92,6 +94,31 @@ expired invite can no longer save anything, and is removed at the next garbage c
 
 You can, but it is one link: whoever submits first spends it for everyone. Make one invite per person
 if you want to know who wrote what.
+
+### How is a view link different from Craft's Share button?
+
+Craft's **Share** button makes a link that anyone who has it can open, as often as they like, until
+its token runs out. A view link, from **View once** on an invite or **Share once** on the edit
+screen, opens once, for the one browser that opens it, for the **Viewing window** (30 minutes by
+default). It is also on the invite list with its status and audit trail, can carry a message and a
+deadline, can be emailed to the recipient on Pro, and can be revoked.
+
+### Can an email scanner or a link preview use up a view link?
+
+No. Opening the link only shows a page with an **Open the page** button, and nothing is spent until
+somebody presses it. Mail security scanners, Microsoft Safe Links, and the previews Slack and
+iMessage make all fetch the link, and none of them press buttons.
+
+### Can they forward a view link?
+
+Before they have opened it, yes, and whoever presses **Open the page** first is the one who sees it.
+Everyone after that is told the link has already been used. The audit trail records the IP address
+of the browser that pressed the button.
+
+After they have opened it, forwarding the page's address does nothing: it only works in the browser
+that opened it. That does not stop a screenshot, and the images and files on the page are served
+from their ordinary public URLs. A view link protects the page, not the files on it. See
+[Usage](https://justinholt.com/plugins/craft-penny/docs/usage#what-a-view-link-does-not-protect).
 
 ### Can I change the emails?
 

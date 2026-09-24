@@ -17,6 +17,10 @@
 - Work in progress is held in a Craft draft where the element type supports one, so a half-finished
   session is never visible on the site and closing the tab loses nothing.
 - Hold for review (Pro): a submission lands as a draft for approval instead of going live.
+- View links (Pro): a one-time link to see an element on the site — drafts, disabled and
+  future-dated entries included — spent by pressing a button rather than by fetching the link, so
+  mail scanners and chat previews cannot use it up, then bound to that browser for a viewing
+  window. **Share once** beside Save on any element with a page makes one in a click.
 - Lifecycle: expiry dates, single submission, revoke, and re-issue. Status is derived, so a link
   stops working the moment it lapses rather than the next time a cron runs.
 - Email delivery, expiry reminders and submission notices (Pro), with site-template overrides.

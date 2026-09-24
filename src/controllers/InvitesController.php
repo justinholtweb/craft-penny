@@ -102,7 +102,8 @@ class InvitesController extends Controller
         $invite->recipientEmail = $this->request->getBodyParam('recipientEmail') ?: null;
         $invite->message = $this->request->getBodyParam('message');
         $invite->surface = $this->request->getBodyParam('surface', $invite->surface);
-        $invite->requireReview = (bool)$this->request->getBodyParam('requireReview');
+        // Nothing is submitted through a view link, so there is nothing to hold.
+        $invite->requireReview = $invite->getSurface()->isEditing() && $this->request->getBodyParam('requireReview');
         $invite->targetSiteId = (int)$this->request->getBodyParam('targetSiteId', $invite->targetSiteId);
         $invite->setNotifyEmails($this->request->getBodyParam('notifyEmails', ''));
 
@@ -163,7 +164,7 @@ class InvitesController extends Controller
             'invite' => $invite,
             'title' => Craft::t('penny', 'Invite link'),
             'key' => $key,
-            'url' => $key ? Plugin::getInstance()->keys->urlForKey($key) : null,
+            'url' => $key ? Plugin::getInstance()->keys->urlForKey($key, $invite) : null,
         ]);
     }
 
@@ -397,6 +398,7 @@ class InvitesController extends Controller
             return $targets;
         }
 
+
         foreach ($posted as $row) {
             if (!is_array($row)) {
                 continue;
@@ -430,6 +432,8 @@ class InvitesController extends Controller
             $target->siteId = $invite->targetSiteId;
             $targets[] = $target;
         }
+
+        Plugin::getInstance()->targets->keepSavedState($invite, $targets);
 
         return $targets;
     }

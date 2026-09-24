@@ -17,6 +17,9 @@ send it back, and the link stops working.
 It is modelled on WordPress's *One Time Login*, but where that plugin hands over a whole admin
 session, Penny hands over a **scope**.
 
+And when they only need to *look* — a client signing off a draft that isn't live yet — Penny makes a
+**view link** (Pro): one person, one look, in one browser, and link scanners can't use it up.
+
 ## Requirements
 
 Craft CMS 5.3+ and PHP 8.2+.
@@ -68,6 +71,27 @@ licence and your recipient never holds a login to your site.
 temporary, tightly-permissioned account, drops them on the edit screen, and deletes the account
 when they hand the work in. It creates a real Craft user for the duration, which a Solo licence counts.
 
+## View links (Pro)
+
+Craft's own *Share* button makes a link anybody can open until its token runs out, however far it is
+forwarded. A view link opens **once, for one person**:
+
+- **Opening the link spends nothing.** It shows your note and an *Open the page* button. Email
+  security scanners, Safe Links and chat link previews fetch links before their recipient does;
+  none of them press buttons, so none of them can burn it.
+- **Pressing the button spends it** and binds the page to that browser with a signed cookie. The
+  page is the element's real URL, rendered by your own templates the way a preview is, so drafts,
+  disabled entries and future-dated posts all show.
+- **For the viewing window** (30 minutes by default) that browser can reload. Any other browser,
+  the URL copied somewhere else, a revoked invite or a closed window gets *This link is closed*.
+
+**Share once** sits beside Save on any entry with a page: one click makes the link and shows it to
+you once, to copy. Or make one from **Penny → New invite** with *What the link does* set to *View
+once*.
+
+It protects the page, not the files on it — images and PDFs keep their usual public URLs — and a
+full-page cache or CDN must not serve cached pages to requests carrying a `token` parameter.
+
 ## Nothing is live until they say so
 
 Where Craft keeps drafts — entries and categories — the recipient works on a draft. The live
@@ -108,6 +132,7 @@ account.
 | Temporary control panel sessions | | ✓ |
 | Email delivery, reminders, submission notices | | ✓ |
 | Hold for review | | ✓ |
+| View links and Share once | | ✓ |
 | Logo, accent colour and heading on the Penny page | ✓ | ✓ |
 | Console commands and the Twig API | ✓ | ✓ |
 
@@ -153,7 +178,7 @@ the command runs.
 ## Settings
 
 Everything is under **Settings → Plugins → Penny**: the URL prefix invites are served from, the
-default deadline and surface, session length, email defaults, the accent colour and logo for the
+default deadline and surface, session length, the viewing window for view links, email defaults, the accent colour and logo for the
 Penny page, how long the audit trail is kept, and how many wrong guesses an IP address gets per
 hour.
 
@@ -166,13 +191,16 @@ hour.
 - A key that matches nothing and a key that is malformed get the same answer, because telling them
   apart is only useful to somebody guessing.
 - Deleting an invite kills its link immediately, not when the trash is emptied.
+- A view link's page is refused without the signed cookie of the browser that opened it, checked
+  on every load, and is sent with no-cache, `noindex` and `Referrer-Policy: no-referrer` so its
+  token URL goes nowhere else.
 - The audit trail records the IP and a hash of the user agent. It never records the key.
 
 ## Testing
 
 ```sh
 cd ~/Sites/plugin-testing
-ddev exec php /var/www/craft-penny/tests/integration/checks.php   # 72 checks
+ddev exec php /var/www/craft-penny/tests/integration/checks.php   # 83 checks
 ```
 
 ## Licence

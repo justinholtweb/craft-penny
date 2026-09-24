@@ -8,6 +8,8 @@ use craft\base\Plugin as BasePlugin;
 use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\events\AuthorizationCheckEvent;
+use craft\events\DefineHtmlEvent;
+use craft\helpers\Html;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
@@ -30,6 +32,7 @@ use justinholtweb\penny\services\Notifications;
 use justinholtweb\penny\services\Scope;
 use justinholtweb\penny\services\Sessions;
 use justinholtweb\penny\services\Targets;
+use justinholtweb\penny\services\Views;
 use justinholtweb\penny\twig\PennyVariable;
 use justinholtweb\penny\web\assets\cp\CpAsset;
 use yii\base\Event;
@@ -46,6 +49,7 @@ use yii\base\Event;
  * @property-read Scope $scope
  * @property-read Sessions $sessions
  * @property-read Targets $targets
+ * @property-read Views $views
  * @property-read Settings $settings
  *
  * @method Settings getSettings()
@@ -93,6 +97,7 @@ class Plugin extends BasePlugin
                 'scope' => Scope::class,
                 'sessions' => Sessions::class,
                 'targets' => Targets::class,
+                'views' => Views::class,
             ],
         ];
     }
@@ -113,6 +118,7 @@ class Plugin extends BasePlugin
         $this->registerTwig();
         $this->registerGarbageCollection();
         $this->registerSessionGuard();
+        $this->registerShareOnce();
     }
 
     public function getCpNavItem(): ?array
@@ -254,6 +260,52 @@ class Plugin extends BasePlugin
         Event::on(Gc::class, Gc::EVENT_RUN, function() {
             $this->invites->sweepExpired();
             $this->audit->prune();
+        });
+    }
+
+    /**
+     * "Share once", beside Save on anything with a page on the site.
+     *
+     * Craft's own Share button makes a link that anyone can open until its token runs out. This one
+     * makes a view invite: one person, once, in one browser. It lives on the edit screen because
+     * that is where somebody is when they think "I need the client to look at this".
+     */
+    private function registerShareOnce(): void
+    {
+        Event::on(Element::class, Element::EVENT_DEFINE_ADDITIONAL_BUTTONS, function(DefineHtmlEvent $event) {
+            /** @var ElementInterface $element */
+            $element = $event->sender;
+            $user = Craft::$app->getUser();
+
+            if (
+                !$this->isPro()
+                || $element instanceof Invite
+                || !$element::hasUris()
+                || $element->getIsRevision()
+                || $this->sessions->currentInvite() !== null
+                || !$user->checkPermission(self::PERMISSION_MANAGE)
+                || $element->getUrl() === null
+            ) {
+                return;
+            }
+
+            // A provisional draft is somebody's unsaved edits, not something to show a client —
+            // share what is saved. A real draft is shared as that draft.
+            $draftId = $element->getIsDraft() && !$element->isProvisionalDraft ? $element->draftId : null;
+
+            Craft::$app->getView()->registerAssetBundle(CpAsset::class);
+
+            $event->html .= Html::button(Craft::t('penny', 'Share once'), [
+                'type' => 'button',
+                'class' => ['btn', 'penny-share-once'],
+                'title' => Craft::t('penny', 'A link that opens once, for one person, in one browser.'),
+                'data' => [
+                    'element-type' => $element::class,
+                    'canonical-id' => $element->getCanonicalId(),
+                    'site-id' => $element->siteId,
+                    'draft-id' => $draftId,
+                ],
+            ]);
         });
     }
 

@@ -12,6 +12,7 @@ use craft\mail\Message;
 use craft\web\View;
 use justinholtweb\penny\elements\Invite;
 use justinholtweb\penny\enums\EventType;
+use justinholtweb\penny\enums\Surface;
 use justinholtweb\penny\Plugin;
 use Throwable;
 
@@ -39,7 +40,9 @@ class Notifications extends Component
         $sent = $this->send(
             $invite,
             $invite->recipientEmail,
-            Craft::t('penny', '{site}: some content needs your attention', ['site' => $invite->getSite()->getName()]),
+            $invite->getSurface() === Surface::View
+                ? Craft::t('penny', '{site} has shared a page with you', ['site' => $invite->getSite()->getName()])
+                : Craft::t('penny', '{site}: some content needs your attention', ['site' => $invite->getSite()->getName()]),
             'invite',
             ['key' => $key],
         );
@@ -160,7 +163,7 @@ class Notifications extends Component
         $variables += [
             'invite' => $invite,
             'settings' => Plugin::getInstance()->getSettings(),
-            'url' => isset($variables['key']) ? Plugin::getInstance()->keys->urlForKey($variables['key']) : null,
+            'url' => isset($variables['key']) ? Plugin::getInstance()->keys->urlForKey($variables['key'], $invite) : null,
         ];
 
         $override = "penny/emails/$template";

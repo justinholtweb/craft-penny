@@ -39,6 +39,13 @@ class HostedController extends Controller
         }
 
         $invite = $result->invite;
+
+        // A view link is opened on the site, where the page it shows lives. Nothing is marked
+        // opened here: whatever fetched this may well be a mail scanner.
+        if ($invite->getSurface() === Surface::View) {
+            return $this->redirect(Plugin::getInstance()->keys->urlForKey($key, $invite));
+        }
+
         Plugin::getInstance()->invites->markOpened($invite);
 
         if ($invite->getSurface() === Surface::Cp && Plugin::getInstance()->isPro()) {

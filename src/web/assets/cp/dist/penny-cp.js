@@ -376,8 +376,117 @@
         return Promise.resolve();
     }
 
+    // --- "Share once" on an element's edit screen ---------------------------
+
+    /*
+     * Delegated rather than bound, because Craft redraws the buttons beside Save when an element
+     * becomes a draft, and a listener on the old button would go with it.
+     */
+    document.addEventListener('click', function(event) {
+        var button = event.target.closest && event.target.closest('.penny-share-once');
+
+        if (!button || button.classList.contains('loading')) {
+            return;
+        }
+
+        button.classList.add('loading');
+
+        Craft.sendActionRequest('POST', 'penny/view/share', {
+            data: {
+                elementType: button.dataset.elementType,
+                canonicalId: button.dataset.canonicalId,
+                siteId: button.dataset.siteId,
+                draftId: button.dataset.draftId || ''
+            }
+        })
+            .then(function(response) {
+                button.classList.remove('loading');
+                showShareHud(button, response.data);
+            })
+            .catch(function(error) {
+                button.classList.remove('loading');
+                Craft.cp.displayError(
+                    (error && error.response && error.response.data && error.response.data.message) ||
+                    Craft.t('penny', 'Couldn’t make a link.')
+                );
+            });
+    });
+
+    function showShareHud(button, data) {
+        var content = document.createElement('div');
+        content.className = 'penny-share-hud';
+
+        var heading = document.createElement('p');
+        heading.className = 'penny-share-hud-heading';
+        heading.textContent = Craft.t('penny', 'Copy it now. Penny only ever shows it once.');
+
+        var row = document.createElement('div');
+        row.className = 'flex';
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.readOnly = true;
+        input.className = 'text fullwidth code';
+        input.value = data.url;
+        input.addEventListener('focus', function() { input.select(); });
+
+        var copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'btn';
+        copy.textContent = Craft.t('penny', 'Copy');
+        copy.addEventListener('click', function() {
+            input.select();
+
+            (navigator.clipboard ? navigator.clipboard.writeText(data.url) : Promise.reject())
+                .catch(function() { document.execCommand('copy'); })
+                .then(function() { Craft.cp.displayNotice(Craft.t('penny', 'Copied.')); });
+        });
+
+        row.appendChild(input);
+        row.appendChild(copy);
+
+        var note = document.createElement('p');
+        note.className = 'light';
+        note.textContent = data.expires + ' ';
+
+        var more = document.createElement('a');
+        more.href = data.editUrl;
+        more.textContent = Craft.t('penny', 'Manage this link');
+        note.appendChild(more);
+
+        content.appendChild(heading);
+        content.appendChild(row);
+        content.appendChild(note);
+
+        new Garnish.HUD($(button), $(content), { orientations: ['bottom', 'top'] });
+        input.focus();
+    }
+
+    // --- the invite editor: what a view link does not need -----------------
+
+    /*
+     * A view link shows one page and edits nothing, so the field ticks, "add another" and review
+     * have nothing to say. Hidden rather than removed: switching back must not lose what was set.
+     */
+    function wireSurface() {
+        var surface = document.getElementById('surface');
+        var targets = document.getElementById('penny-targets');
+
+        if (!surface || !targets) {
+            return;
+        }
+
+        function sync() {
+            document.body.classList.toggle('penny-view-invite', surface.value === 'view');
+        }
+
+        surface.addEventListener('change', sync);
+        sync();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         wireActions();
         wireRepeater();
+        wireSurface();
     });
 })();

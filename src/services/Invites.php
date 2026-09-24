@@ -91,7 +91,10 @@ class Invites extends Component
      */
     public function reissue(Invite $invite): ?string
     {
-        if (!$invite->getIsRedeemable() && $invite->dateRevoked === null && $invite->dateSubmitted !== null) {
+        // Anything handed in — submitted, awaiting review, or a view link that has been opened —
+        // is finished, revoked since or not. A new key would bring back a link whose status still
+        // says "used", and it would refuse whoever it was sent to.
+        if ($invite->dateSubmitted !== null) {
             return null;
         }
 
@@ -166,6 +169,34 @@ class Invites extends Component
 
         // A control panel session outlives its usefulness the moment the work is handed in.
         $this->endSession($invite);
+    }
+
+    /**
+     * A view link has been opened, deliberately, by somebody pressing the button. It is now spent.
+     *
+     * Written as a submission that applied, because to every other part of Penny that is exactly
+     * what it is — a link that has done its one job and must not open again. The status reads
+     * "Viewed" rather than "Submitted" because the invite knows it was a view.
+     */
+    public function markViewed(Invite $invite): void
+    {
+        $now = new DateTime();
+        $values = [
+            'dateSubmitted' => Db::prepareDateForDb($now),
+            'dateApplied' => Db::prepareDateForDb($now),
+        ];
+
+        $invite->dateSubmitted = $now;
+        $invite->dateApplied = $now;
+
+        if ($invite->dateFirstOpened === null) {
+            $invite->dateFirstOpened = $now;
+            $values['dateFirstOpened'] = Db::prepareDateForDb($now);
+        }
+
+        Db::update(Table::INVITES, $values, ['id' => $invite->id], updateTimestamp: false);
+
+        Plugin::getInstance()->audit->record($invite, EventType::Viewed);
     }
 
     /** An admin has approved a submission that was held for review. */
